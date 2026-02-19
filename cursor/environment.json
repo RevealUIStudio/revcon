@@ -1,0 +1,21 @@
+{
+  "install": "fnm install 24 && fnm use 24 && fnm default 24",
+  "terminals": [
+    {
+      "name": "Node 24 (fnm)",
+      "command": "fnm use 24 && exec /bin/bash",
+      "env": {
+        "NODE_ENV": "development"
+      }
+    }
+  ],
+  "env": {
+    "NODE_ENV": "development",
+    "REVEALUI_SECRET": "",
+    "POSTGRES_URL": ""
+  },
+  "runtime": {
+    "node": "24",
+    "packageManager": "pnpm"
+  }
+}
