@@ -1,57 +1,80 @@
 # editor-configs
 
-Private registry of editor and tooling configurations for RevealUI projects.
+Centralized editor configurations for RevealUI projects. Configs are symlinked
+into target projects — edits propagate instantly, nothing gets committed to
+target repos.
 
-## Supported editors
+## Quick Start
 
-- cursor/ - Cursor IDE
-- zed/ - Zed editor
-- vscode/ - VS Code (placeholder)
+```bash
+# Link into a project with a profile
+./link.sh --target ~/projects/RevealUI --profile revealui
 
-## Usage
+# Link base configs only (no profile)
+./link.sh --target ~/projects/RevealCoin
 
-Apply configs to an existing project:
+# Link a single editor
+./link.sh --target ~/projects/RevealUI --profile revealui --editor zed
 
-    git clone git@github.com:RevealUIStudio/editor-configs.git /tmp/editor-configs
-    /tmp/editor-configs/scripts/apply.sh --editor cursor --target /path/to/project
+# Preview without changes
+./link.sh --dry-run --target ~/projects/RevealUI --profile revealui
 
-Or apply all editors:
+# Remove symlinks
+./unlink.sh --target ~/projects/RevealUI
 
-    /tmp/editor-configs/scripts/apply.sh --target /path/to/project
+# List available profiles
+./link.sh --list
+```
 
-### apply.sh flags
+## Structure
 
-- --editor cursor|zed|vscode|all (default: all)
-- --target /path (default: current directory)
+```
+editor-configs/
+├── base/                          # Universal configs (all projects)
+│   ├── cursor/
+│   │   ├── .cursorignore
+│   │   ├── environment.json
+│   │   └── snippets/
+│   └── zed/
+│       └── settings.json
+├── profiles/                      # Per-project overrides (layered on base)
+│   └── revealui/
+│       ├── cursor/
+│       │   ├── .cursorrules
+│       │   ├── config.json
+│       │   ├── mcp-config.json
+│       │   ├── rules.md
+│       │   ├── commands/
+│       │   └── workflows/
+│       └── zed/
+│           └── tasks.json
+├── link.sh                        # Create symlinks + gitignore
+└── unlink.sh                      # Remove symlinks
+```
 
-## What is included
+## How It Works
 
-### Cursor (cursor/)
+1. **`link.sh`** creates real directories (`.zed/`, `.cursor/`) in the target project
+2. Individual config files are symlinked from `base/` into those directories
+3. Profile files overlay on top — same filename in a profile overrides the base version
+4. Editor-written state (cache, chat history) stays in the real directory, not here
+5. `.gitignore` is updated so symlinked dirs are never committed
 
-- config.json - AI rules, file patterns, framework context
-- environment.json - Terminal setup using FNM, Node 24 (replaces NVM)
-- mcp-config.json - MCP server definitions (Vercel, Stripe, Neon, Supabase, Playwright)
-- mcp.json - Vite dev server MCP endpoint
-- rules.md - Cursor AI coding rules
-- rules/node-version.mdc - Node version enforcement
-- commands/ - Custom Cursor commands
-- snippets/ - Code snippets (React, Next.js, route handlers)
-- workflows/ - Development workflow docs
+## Adding a Profile
 
-### Zed (zed/)
+```bash
+mkdir -p profiles/revealcoin/cursor profiles/revealcoin/zed
+# Add project-specific configs (MCP servers, tasks, rules, etc.)
+```
 
-- settings.json - Zed workspace settings
-- tasks.json - Zed task definitions
+## Supported Editors
 
-## After applying
+| Editor | Dot-dir | Status |
+|--------|---------|--------|
+| Cursor | `.cursor/` | Full support |
+| Zed | `.zed/` | Full support |
+| VS Code | `.vscode/` | Placeholder |
 
-1. Review all copied files
-2. environment.json uses FNM - install fnm if not present (https://github.com/Schniz/fnm)
-3. mcp-config.json env vars use dollar{VAR} placeholders - set in .env.local or shell
-4. mcp-config.json references pnpm mcp:* scripts - verify in target package.json
-5. Commit the editor config files if you want them tracked in the project
+## License
 
-## CLI integration
-
-The create-revealui CLI will offer --with-editor-configs as an optional step during
-project scaffolding, cloning this repo and running apply.sh automatically.
+MIT
