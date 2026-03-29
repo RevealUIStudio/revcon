@@ -1,0 +1,459 @@
+{
+  "version": 1,
+  "generatedAt": "2026-03-29T03:40:38.636Z",
+  "generators": [
+    "claude-code",
+    "cursor"
+  ],
+  "definitions": [
+    {
+      "id": "agent-dispatch",
+      "type": "rule",
+      "name": "Agent Profile Dispatch",
+      "description": "When to spawn specialized agent profiles from .claude/agents/",
+      "tier": "pro",
+      "canonicalPath": "rules/pro/agent-dispatch.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".claude/rules/agent-dispatch.md"
+        ],
+        "cursor": [
+          ".cursor/rules/agent-dispatch.mdc"
+        ]
+      },
+      "tags": [
+        "agents",
+        "coordination"
+      ]
+    },
+    {
+      "id": "biome",
+      "type": "rule",
+      "name": "Biome Conventions",
+      "description": "Biome 2 linter/formatter rules and suppression protocol",
+      "tier": "oss",
+      "canonicalPath": "rules/oss/biome.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".claude/rules/biome.md"
+        ],
+        "cursor": [
+          ".cursor/rules/biome.mdc"
+        ]
+      },
+      "tags": [
+        "lint",
+        "format",
+        "quality"
+      ]
+    },
+    {
+      "id": "code-analysis-policy",
+      "type": "rule",
+      "name": "Code Analysis Policy",
+      "description": "Prefer AST-based analysis over regex for security and architecture checks",
+      "tier": "oss",
+      "canonicalPath": "rules/oss/code-analysis-policy.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".claude/rules/code-analysis-policy.md"
+        ],
+        "cursor": [
+          ".cursor/rules/code-analysis-policy.mdc"
+        ]
+      },
+      "tags": [
+        "security",
+        "analysis"
+      ]
+    },
+    {
+      "id": "database",
+      "type": "rule",
+      "name": "Database Conventions",
+      "description": "Dual-database architecture (NeonDB + Supabase) boundaries and query patterns",
+      "tier": "oss",
+      "canonicalPath": "rules/oss/database.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".claude/rules/database.md"
+        ],
+        "cursor": [
+          ".cursor/rules/database.mdc"
+        ]
+      },
+      "tags": [
+        "database",
+        "architecture",
+        "drizzle"
+      ]
+    },
+    {
+      "id": "monorepo",
+      "type": "rule",
+      "name": "Monorepo Conventions",
+      "description": "pnpm workspace, Turborepo, package structure, and publishing conventions",
+      "tier": "oss",
+      "canonicalPath": "rules/oss/monorepo.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".claude/rules/monorepo.md"
+        ],
+        "cursor": [
+          ".cursor/rules/monorepo.mdc"
+        ]
+      },
+      "tags": [
+        "monorepo",
+        "pnpm",
+        "turborepo"
+      ]
+    },
+    {
+      "id": "parameterization",
+      "type": "rule",
+      "name": "Parameterization Conventions",
+      "description": "Never hardcode config values — extract, type, default, and make overridable",
+      "tier": "oss",
+      "canonicalPath": "rules/oss/parameterization.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".claude/rules/parameterization.md"
+        ],
+        "cursor": [
+          ".cursor/rules/parameterization.mdc"
+        ]
+      },
+      "tags": [
+        "config",
+        "patterns"
+      ]
+    },
+    {
+      "id": "skills-usage",
+      "type": "rule",
+      "name": "Skill Auto-Use Guidelines",
+      "description": "When to proactively invoke skills vs wait for explicit user request",
+      "tier": "pro",
+      "canonicalPath": "rules/pro/skills-usage.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".claude/rules/skills-usage.md"
+        ],
+        "cursor": [
+          ".cursor/rules/skills-usage.mdc"
+        ]
+      },
+      "tags": [
+        "skills",
+        "automation"
+      ]
+    },
+    {
+      "id": "tailwind",
+      "type": "rule",
+      "name": "Tailwind CSS v4 Conventions",
+      "description": "Tailwind v4 syntax rules, v3→v4 migration gotchas, and shared config patterns",
+      "tier": "oss",
+      "canonicalPath": "rules/oss/tailwind.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".claude/rules/tailwind.md",
+          ".claude/skills/tailwind-4-docs/SKILL.md",
+          ".claude/skills/tailwind-4-docs/references/gotchas.md"
+        ],
+        "cursor": [
+          ".cursor/rules/tailwind.mdc"
+        ]
+      },
+      "tags": [
+        "css",
+        "tailwind",
+        "styling"
+      ]
+    },
+    {
+      "id": "unused-declarations",
+      "type": "rule",
+      "name": "Unused Declarations Policy",
+      "description": "Never suppress unused warnings without determining if code is incomplete — implement first",
+      "tier": "oss",
+      "canonicalPath": "rules/oss/unused-declarations.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".claude/rules/unused-declarations.md"
+        ],
+        "cursor": [
+          ".cursor/rules/unused-declarations.mdc"
+        ]
+      },
+      "tags": [
+        "lint",
+        "quality",
+        "policy"
+      ]
+    },
+    {
+      "id": "audit",
+      "type": "command",
+      "name": "Audit",
+      "description": "Audit the codebase for avoidable `any` types and production console statements. Use when asked to check code quality, before a release, or after a large refactor.",
+      "tier": "oss",
+      "canonicalPath": "commands/oss/audit.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".claude/commands/audit.md"
+        ]
+      }
+    },
+    {
+      "id": "gate",
+      "type": "command",
+      "name": "Gate",
+      "description": "Run the full CI gate (Biome lint, typecheck, Vitest, turbo build) before pushing. Only invoke when explicitly asked to run the gate or verify before a push.",
+      "tier": "oss",
+      "canonicalPath": "commands/oss/gate.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".claude/commands/gate.md",
+          ".claude/agents/gate-runner.md"
+        ]
+      }
+    },
+    {
+      "id": "new-package",
+      "type": "command",
+      "name": "New Package",
+      "description": "Scaffold a new @revealui/* package with package.json, tsconfig.json, tsup.config.ts, and src/index.ts. Only invoke when explicitly asked to create a new package.",
+      "tier": "oss",
+      "canonicalPath": "commands/oss/new-package.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".claude/commands/new-package.md"
+        ]
+      }
+    },
+    {
+      "id": "stripe-best-practices",
+      "type": "command",
+      "name": "Stripe Best Practices",
+      "description": "Apply when working on Stripe billing, payments, webhooks, subscriptions, or checkout flows (apps/api/src/routes/billing.ts, packages/services).",
+      "tier": "pro",
+      "canonicalPath": "commands/pro/stripe-best-practices.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".claude/commands/stripe-best-practices.md"
+        ]
+      }
+    },
+    {
+      "id": "builder",
+      "type": "agent",
+      "name": "Builder",
+      "description": "Builds and typechecks packages in isolation",
+      "tier": "oss",
+      "canonicalPath": "agents/oss/builder.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".claude/agents/builder.md"
+        ]
+      }
+    },
+    {
+      "id": "docs-sync",
+      "type": "agent",
+      "name": "Docs Sync",
+      "description": "Checks documentation freshness against code changes to prevent doc drift",
+      "tier": "pro",
+      "canonicalPath": "agents/pro/docs-sync.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".claude/agents/docs-sync.md"
+        ]
+      }
+    },
+    {
+      "id": "gate-runner",
+      "type": "agent",
+      "name": "Gate Runner",
+      "description": "Runs the full CI gate in isolation",
+      "tier": "pro",
+      "canonicalPath": "agents/pro/gate-runner.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".claude/agents/gate-runner.md"
+        ]
+      }
+    },
+    {
+      "id": "linter",
+      "type": "agent",
+      "name": "Linter",
+      "description": "Lint and format code in isolation",
+      "tier": "oss",
+      "canonicalPath": "agents/oss/linter.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".claude/agents/linter.md"
+        ]
+      }
+    },
+    {
+      "id": "security-reviewer",
+      "type": "agent",
+      "name": "Security Reviewer",
+      "description": "Reviews code for security vulnerabilities, hardcoded secrets, and auth issues",
+      "tier": "pro",
+      "canonicalPath": "agents/pro/security-reviewer.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".claude/agents/security-reviewer.md"
+        ]
+      }
+    },
+    {
+      "id": "tester",
+      "type": "agent",
+      "name": "Tester",
+      "description": "Runs tests for packages in isolation",
+      "tier": "oss",
+      "canonicalPath": "agents/oss/tester.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".claude/agents/tester.md"
+        ]
+      }
+    },
+    {
+      "id": "db-migrate",
+      "type": "skill",
+      "name": "Database Migration",
+      "description": "Create and apply Drizzle ORM migrations with dual-DB boundary checks (NeonDB vs Supabase)",
+      "tier": "pro",
+      "canonicalPath": "skills/pro/db-migrate.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".claude/skills/db-migrate/SKILL.md"
+        ]
+      }
+    },
+    {
+      "id": "preflight",
+      "type": "skill",
+      "name": "Preflight Check",
+      "description": "Run the 15-check pre-launch preflight and interpret results with context-aware fix suggestions",
+      "tier": "oss",
+      "canonicalPath": "skills/oss/preflight.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".claude/skills/preflight/SKILL.md"
+        ]
+      }
+    },
+    {
+      "id": "revealui-conventions",
+      "type": "skill",
+      "name": "RevealUI Conventions",
+      "description": "RevealUI coding conventions for any code task — writing, editing, reviewing, creating,\nfixing, refactoring, changing, adding, or updating TypeScript, React, CSS, or config files.\nCovers TypeScript strict mode, ES Modules, Biome formatting, Tailwind v4 syntax,\nconventional commits, monorepo workspace protocol, feature gating, parameterization,\nand unused declaration policy.",
+      "tier": "oss",
+      "canonicalPath": "skills/oss/revealui-conventions.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".claude/skills/revealui-conventions/SKILL.md"
+        ]
+      }
+    },
+    {
+      "id": "revealui-db",
+      "type": "skill",
+      "name": "RevealUI Database",
+      "description": "RevealUI database conventions for any task involving database, schema, query, migration,\nDrizzle ORM, Supabase, NeonDB, PostgreSQL, vectors, embeddings, or data modeling.\nEnforces dual-database architecture boundaries and import restrictions.",
+      "tier": "pro",
+      "canonicalPath": "skills/pro/revealui-db.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".claude/skills/revealui-db/SKILL.md"
+        ]
+      }
+    },
+    {
+      "id": "revealui-debugging",
+      "type": "skill",
+      "name": "RevealUI Debugging",
+      "description": "Systematic debugging workflow for RevealUI. Use when encountering any bug, test failure,\nunexpected behavior, error, or broken functionality. Prevents shotgun debugging.",
+      "tier": "pro",
+      "canonicalPath": "skills/pro/revealui-debugging.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".claude/skills/revealui-debugging/SKILL.md"
+        ]
+      }
+    },
+    {
+      "id": "revealui-review",
+      "type": "skill",
+      "name": "RevealUI Code Review",
+      "description": "Code review checklist for RevealUI. Use when reviewing code, completing a feature,\nchecking quality, or before committing. Invoke explicitly with $revealui-review.",
+      "tier": "pro",
+      "canonicalPath": "skills/pro/revealui-review.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".claude/skills/revealui-review/SKILL.md"
+        ]
+      }
+    },
+    {
+      "id": "revealui-safety",
+      "type": "skill",
+      "name": "RevealUI Safety",
+      "description": "RevealUI safety guardrails for any code task — editing, writing, creating, fixing,\nrefactoring, changing, adding, updating, or removing files. Protects credentials,\nenforces import boundaries, ensures code quality, and verifies work before completion.",
+      "tier": "oss",
+      "canonicalPath": "skills/oss/revealui-safety.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".claude/skills/revealui-safety/SKILL.md"
+        ]
+      }
+    },
+    {
+      "id": "revealui-tdd",
+      "type": "skill",
+      "name": "RevealUI TDD",
+      "description": "Test-driven development workflow for RevealUI. Use when implementing any feature,\nfixing bugs, adding functionality, or writing new code. Enforces write-test-first,\nred-green-refactor cycle. Works with Vitest and React Testing Library.",
+      "tier": "pro",
+      "canonicalPath": "skills/pro/revealui-tdd.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".claude/skills/revealui-tdd/SKILL.md"
+        ]
+      }
+    },
+    {
+      "id": "revealui-testing",
+      "type": "skill",
+      "name": "RevealUI Testing",
+      "description": "RevealUI monorepo testing rules and failure-triage guidance. Use when changing tests,\nfixing flaky suites, adjusting Vitest config, debugging Turbo test failures, handling\nReact Testing Library warnings, or deciding between scoped timeouts, worker limits,\nand test refactors in this repo.",
+      "tier": "oss",
+      "canonicalPath": "skills/oss/revealui-testing.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".claude/skills/revealui-testing/SKILL.md"
+        ]
+      }
+    },
+    {
+      "id": "tailwind-4-docs",
+      "type": "skill",
+      "name": "Tailwind CSS v4 Documentation",
+      "description": "Agent-optimized access to Tailwind CSS v4 documentation for answering questions, selecting utilities/variants, configuring Tailwind v4, and avoiding v3→v4 migration pitfalls.",
+      "tier": "oss",
+      "canonicalPath": "skills/oss/tailwind-4-docs.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".claude/skills/tailwind-4-docs/SKILL.md",
+          ".claude/skills/tailwind-4-docs/references/gotchas.md"
+        ]
+      }
+    }
+  ]
+}
