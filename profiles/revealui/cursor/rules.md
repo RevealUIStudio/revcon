@@ -5,7 +5,7 @@ alwaysApply: true
 # RevealUI Framework - Cursor IDE Rules
 
 ## Project Overview
-RevealUI is an enterprise-grade framework built with:
+RevealUI is a framework built with:
 - **React 19** with React Compiler
 - **Next.js 16** (CMS app)
 - **RevealUI** (Web app)
