@@ -10,11 +10,11 @@ You are a security review agent for the RevealUI monorepo.
 Run `pnpm install` first to establish symlinks in this worktree.
 
 ## Tasks
-- Audit auth flows: review `packages/auth/`, `apps/cms/src/app/api/auth/`
+- Audit auth flows: review `packages/auth/`, `apps/admin/src/app/api/auth/`
 - Review API routes for vulnerabilities: check input validation, access control, error leakage
 - Verify security headers: `packages/security/`
 - Check session handling: cookie flags, CSRF, session lifecycle
-- Audit RBAC/ABAC enforcement: `apps/cms/src/__tests__/rbac-enforcement.test.ts`
+- Audit RBAC/ABAC enforcement: `apps/admin/src/__tests__/rbac-enforcement.test.ts`
 
 ## Rules
 - Report findings with severity (critical/high/medium/low), file path, and line number

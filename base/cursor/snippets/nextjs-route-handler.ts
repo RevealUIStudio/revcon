@@ -1,7 +1,7 @@
 /**
  * Next.js 16 Route Handler Template
  *
- * Usage: Create API routes in apps/cms/src/app/api/
+ * Usage: Create API routes in apps/admin/src/app/api/
  */
 
 import { type NextRequest, NextResponse } from 'next/server'

@@ -3,7 +3,7 @@
 You are working on the RevealUI Framework, an enterprise-grade React 19 framework with Next.js 16 and RevealUI.
 
 ## Project Structure
-- `apps/cms` - Next.js 16 + application
+- `apps/admin` - Next.js 16 + application
 - `apps/mainframe` - RevealUI + React application
 - `packages/reveal` - Core framework package
 - `packages/services` - Shared services (Stripe, Supabase)
@@ -12,7 +12,7 @@ You are working on the RevealUI Framework, an enterprise-grade React 19 framewor
 
 ## Key Technologies
 - React 19 with React Compiler
-- Next.js 16 (CMS app)
+- Next.js 16 (admin app)
 - RevealUI (Web app)
 - TypeScript (strict mode)
 - Tailwind CSS 4.0
@@ -21,7 +21,7 @@ You are working on the RevealUI Framework, an enterprise-grade React 19 framewor
 ## Important Conventions
 
 ### Import Paths
-- Use `@/lib/*` for CMS app imports (e.g., `@/lib/components/...`)
+- Use `@/lib/*` for admin app imports (e.g., `@/lib/components/...`)
 - Use `revealui/*` for framework imports (e.g., `revealui/core/router/...`)
 - Use workspace protocol for internal packages: `workspace:*`
 
@@ -35,7 +35,7 @@ You are working on the RevealUI Framework, an enterprise-grade React 19 framewor
 ### TypeScript
 - Strict mode enabled
 - Prefer explicit types over `any`
-- Use `Config` type from `revealui/cms` for configs
+- Use `Config` type from `@revealui/core` for configs
 - Use `CollectionConfig` for collections
 
 ### Environment Variables
@@ -162,7 +162,7 @@ export default async function Page({ params, searchParams }: Args) {
 ## Build & Development
 - `pnpm dev` - Start all apps in development
 - `pnpm build` - Build all packages
-- `pnpm --filter cms build` - Build CMS app
+- `pnpm --filter admin build` - Build admin app
 - **Bundler**: Prefer Turbopack over Webpack for Next.js builds (Turbopack is faster and the default in Next.js 16)
 - Use `--turbopack` flag when running Next.js dev server: `pnpm dev --turbo`
 

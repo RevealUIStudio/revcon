@@ -1,7 +1,7 @@
 /**
  * Next.js 16 Page Component Template
  *
- * Usage: Create pages in apps/cms/src/app/
+ * Usage: Create pages in apps/admin/src/app/
  */
 
 import type { Metadata } from 'next'

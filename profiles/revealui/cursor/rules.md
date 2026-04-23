@@ -7,18 +7,18 @@ alwaysApply: true
 ## Project Overview
 RevealUI is a framework built with:
 - **React 19** with React Compiler
-- **Next.js 16** (CMS app)
+- **Next.js 16** (admin app)
 - **RevealUI** (Web app)
-- **@revealui/core** (Native CMS)
+- **@revealui/core** (Native admin framework)
 - **@revealui/db** (Drizzle ORM)
 - **TypeScript** (strict mode)
 - **Tailwind CSS 4.0**
 - **Monorepo** structure (pnpm workspaces)
 
 ## Architecture
-- `apps/cms` - Next.js 16 + @revealui/core application
+- `apps/admin` - Next.js 16 + @revealui/core application
 - `apps/mainframe` - RevealUI + React application
-- `packages/core` - Core CMS framework package (@revealui/core)
+- `packages/core` - Core admin framework package (@revealui/core)
 - `packages/db` - Drizzle ORM schemas for NeonDB
 - `packages/schema` - Zod schemas
 - `packages/services` - Shared services (Stripe, Supabase)
@@ -40,8 +40,8 @@ RevealUI is a framework built with:
 - This prevents npm deprecation warnings and enforces pnpm usage
 
 ### Import Paths
-- Use `@/lib/*` for CMS app imports
-- Use `@revealui/core` for CMS framework imports
+- Use `@/lib/*` for admin app imports
+- Use `@revealui/core` for admin framework imports
 - Use `@revealui/db` for database imports
 - Use `@revealui/contracts` for Zod schemas and validation
 - Use workspace protocol for internal packages: `workspace:*`
@@ -49,7 +49,7 @@ RevealUI is a framework built with:
 ### TypeScript
 - Strict mode enabled
 - Prefer explicit types over `any`
-- Use `Config` type from `@revealui/core` for CMS configs
+- Use `Config` type from `@revealui/core` for admin configs
 - Use `CollectionConfig` for collection definitions
 
 ### API Architecture
@@ -59,9 +59,9 @@ RevealUI is a framework built with:
 - All API endpoints use standard HTTP methods (GET, POST, PATCH, DELETE)
 - GraphQL is forbidden - do not add GraphQL dependencies, schemas, or resolvers
 
-### CMS Routes
+### Admin Routes
 - All dynamic routes must be marked `export const dynamic = "force-dynamic"`
-- Use `createRevealUI` for CMS initialization
+- Use `createRevealUI` for admin initialization
 - Collections with `auth: true` automatically handle authentication
 
 ### Next.js 16
@@ -92,15 +92,15 @@ RevealUI is a framework built with:
 ## Build & Development
 - `pnpm dev` - Start all apps in development
 - `pnpm build` - Build all packages
-- `pnpm --filter cms build` - Build CMS app
+- `pnpm --filter admin build` - Build admin app
 - Prefer Turbopack over Webpack for Next.js builds (use `--turbo` flag)
 
 ## Common Issues & Solutions
 
-### CMS Build Errors
+### Admin Build Errors
 - Ensure `REVEALUI_SECRET` is set during build
 - Ensure `POSTGRES_URL` is set for database connection
-- All CMS routes must be dynamic
+- All admin routes must be dynamic
 - SQLite adapter used when Postgres unavailable
 
 ### TypeScript Errors

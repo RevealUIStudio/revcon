@@ -1,7 +1,7 @@
 /**
  * React Component Template
  *
- * Usage: Create components in apps/cms/src/lib/components/
+ * Usage: Create components in apps/admin/src/lib/components/
  */
 
 import type React from 'react'

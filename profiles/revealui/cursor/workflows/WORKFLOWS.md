@@ -297,7 +297,7 @@ This workflow uses:
 
 ### Prerequisites
 
-1. Next.js dev server running (`pnpm --filter cms dev`)
+1. Next.js dev server running (`pnpm --filter admin dev`)
 2. Dev server accessible at `http://localhost:4000`
 3. Playwright MCP configured (`.cursor/mcp-config.json`)
 4. Next.js DevTools MCP configured
@@ -307,7 +307,7 @@ This workflow uses:
 #### Step 1: Start Dev Server
 
 ```bash
-pnpm --filter cms dev
+pnpm --filter admin dev
 ```
 
 Wait for server to be ready (usually `✓ Ready in Xs` message).
@@ -599,7 +599,7 @@ Step-by-step guide for creating a new React component.
 ### Steps
 
 1. **Create Component File**
-   - Location: `apps/cms/src/lib/components/YourComponent/index.tsx`
+   - Location: `apps/admin/src/lib/components/YourComponent/index.tsx`
    - Use functional component with TypeScript
    - Add proper prop types with interface
 

@@ -6,12 +6,12 @@
     "Add JSDoc comments for public APIs",
     "Use functional components with hooks",
     "Prefer named exports",
-    "All CMS routes must be dynamic",
-    "Use @/lib/* for CMS imports, @revealui/* for framework imports",
+    "All admin routes must be dynamic",
+    "Use @/lib/* for admin imports, @revealui/* for framework imports",
     "Environment variables are tracked in git",
     "Use workspace:* protocol for internal packages",
     "Use Drizzle ORM for database operations",
-    "No external CMS packages - use native @revealui/core",
+    "No external admin packages - use native @revealui/core",
     "ALWAYS use 'pnpm dlx' instead of 'npx' in package.json scripts and code (except preinstall hooks)"
   ],
   "filePatterns": {

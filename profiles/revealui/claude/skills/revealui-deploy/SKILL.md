@@ -27,7 +27,7 @@ RevealUI deploys 5 apps via GitHub Actions to Vercel. Vercel Git Integration is 
 | App | Vercel Project ID | Prod Domain | Test Domain |
 |-----|------------------|-------------|-------------|
 | api | `prj_zk6EQijYXwd9L7BccuBssi436ktM` | api.revealui.com | test.api.revealui.com |
-| cms | `prj_7sEFDg4MH6C26nJPjrukK86QdwfG` | cms.revealui.com | test.cms.revealui.com |
+| admin | `prj_7sEFDg4MH6C26nJPjrukK86QdwfG` | admin.revealui.com | test.admin.revealui.com |
 | marketing | `prj_frTIYlnONVPLNIjKnQpINiGb5lm0` | revealui.com | test.revealui.com |
 | docs | `prj_OPwr0FrgcK17AOBCyoj4JIilJ9S1` | docs.revealui.com | test.docs.revealui.com |
 | revealcoin | `prj_XDiPXngciRytGA8j0vNIDz7hENRM` | revealcoin.revealui.com | test.revealcoin.revealui.com |
@@ -90,7 +90,7 @@ File: `.github/workflows/deploy.yml`
    - `vercel build` — builds with Vercel's build system
    - `vercel deploy --prebuilt` — deploys build output
    - `vercel alias` — aliases to stable custom domain (non-production only)
-3. **Smoke test** — health checks on production/test (API + CMS)
+3. **Smoke test** — health checks on production/test (API + admin)
 4. **Summary** — structured JSON output
 
 ### Token Passing

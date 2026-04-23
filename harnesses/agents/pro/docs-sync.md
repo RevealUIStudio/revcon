@@ -20,8 +20,8 @@ Detect documentation drift — places where code has changed but docs haven't be
 - Compare `packages/cli/src/` commands against docs site CLI reference
 - Flag undocumented commands or removed commands still in docs
 
-### 4. Collection Fields ↔ CMS Docs
-- Compare `apps/cms/src/collections/` field definitions against any collection docs
+### 4. Collection Fields ↔ Admin Docs
+- Compare `apps/admin/src/collections/` field definitions against any collection docs
 - Flag field additions/removals not reflected in documentation
 
 ### 5. Environment Variables
