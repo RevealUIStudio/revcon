@@ -1,0 +1,140 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  parse-shell:
+    name: bash -n (all .sh)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax-check every shell script
+        run: |
+          set -euo pipefail
+          fail=0
+          while IFS= read -r f; do
+            if ! out=$(bash -n "$f" 2>&1); then
+              echo "::error file=$f::$out"
+              fail=1
+            else
+              echo "ok  $f"
+            fi
+          done < <(git ls-files '*.sh')
+          exit "$fail"
+
+  shellcheck:
+    name: ShellCheck (advisory)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ludeeus/action-shellcheck@2.0.0
+        with:
+          severity: warning
+
+  no-hardcoded-user:
+    name: anti-regression — no hardcoded "joshu"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Grep for hardcoded "joshu" in scripted files
+        run: |
+          set -euo pipefail
+          # Universal anti-regression guard mirrored from revkit#5 / forge#6.
+          # revcon templates ship into multiple repos via link.sh — a hardcoded
+          # developer-account path here would propagate into every linked
+          # target. Limited to scripted file types so this workflow file
+          # (which has to mention the literal patterns to scan for them)
+          # doesn't match itself.
+          includes=(--include='*.sh' --include='*.ps1' --include='*.psm1' --include='*.psd1')
+          hits=$(grep -rn 'joshu\b' "${includes[@]}" . || true)
+          if [ -n "$hits" ]; then
+            echo "::error::Hardcoded user-account name found in scripted files."
+            echo "$hits"
+            exit 1
+          fi
+          mnt_hits=$(grep -rn '/mnt/c/Users/joshu' "${includes[@]}" . || true)
+          if [ -n "$mnt_hits" ]; then
+            echo "::error::Hardcoded /mnt/c/Users path found in scripted files."
+            echo "$mnt_hits"
+            exit 1
+          fi
+          echo "ok — no hardcoded user paths in scripted files"
+
+  gitleaks:
+    name: Gitleaks (full history)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  validate-frontmatter:
+    name: Markdown YAML frontmatter validity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate frontmatter on every markdown / mdc file
+        run: |
+          set -euo pipefail
+          # revcon distributes Claude Code agent/command/skill + Cursor
+          # rule definitions via link.sh into multiple repos. Malformed
+          # YAML frontmatter breaks downstream consumers (Claude's skill
+          # loader, Cursor's rule discovery). Validate any .md/.mdc file
+          # that opens with `---` — files without frontmatter pass
+          # trivially. PyYAML ships with ubuntu-latest's default python3.
+          python3 <<'PY'
+          import pathlib, subprocess, sys, yaml
+
+          files = subprocess.check_output(
+              ['git', 'ls-files', '*.md', '*.mdc']).decode().splitlines()
+          failures = []
+
+          for f in files:
+              text = pathlib.Path(f).read_text(encoding='utf-8', errors='replace')
+              if not text.startswith('---'):
+                  continue
+              lines = text.split('\n')
+              # First line is `---`; find the closing `---` line.
+              close_idx = None
+              for i in range(1, len(lines)):
+                  if lines[i].rstrip() == '---':
+                      close_idx = i
+                      break
+              if close_idx is None:
+                  failures.append((f, 'opens with `---` but no closing `---`'))
+                  continue
+              fm_text = '\n'.join(lines[1:close_idx])
+              try:
+                  fm = yaml.safe_load(fm_text)
+              except yaml.YAMLError as e:
+                  failures.append((f, f'YAML parse error: {e}'))
+                  continue
+              if not isinstance(fm, dict):
+                  failures.append((f, f'frontmatter is not a mapping: type={type(fm).__name__}'))
+                  continue
+              if not fm:
+                  failures.append((f, 'frontmatter is empty'))
+
+          for f, err in failures:
+              print(f'::error file={f}::{err}', file=sys.stderr)
+          if failures:
+              print(f'{len(failures)} of {len(files)} files failed', file=sys.stderr)
+              sys.exit(1)
+          print(f'ok — {len(files)} md/mdc files scanned; frontmatter valid where present')
+          PY
