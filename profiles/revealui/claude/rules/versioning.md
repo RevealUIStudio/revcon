@@ -1,5 +1,7 @@
 # Versioning Convention — Maturity-Driven Semver
 
+**Note (2026-05-08):** This profile rule's minor-version ladder conflicts with the global versioning rule at `~/.claude/rules/versioning.md` (M6: pre-1.0 + minor=meaningful change). Reconciliation pending; the global rule is authoritative until then.
+
 ## Pre-1.0: The Maturity Ladder
 
 Before 1.0, the **minor** version signals the package's maturity stage. Patches are the default cadence for all normal work (features, fixes, refactors) within a stage.

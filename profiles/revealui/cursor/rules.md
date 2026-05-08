@@ -4,6 +4,8 @@ alwaysApply: true
 
 # RevealUI Framework - Cursor IDE Rules
 
+**Note (2026-05-08):** This file's app-structure references (L18-26) are outdated as of 2026-05-08; full content audit deferred. Authoritative agent rules live in `~/.claude/rules/` and `~/revfleet/.jv/.claude/rules/`.
+
 ## Project Overview
 RevealUI is a framework built with:
 - **React 19** with React Compiler
@@ -130,7 +132,7 @@ RevealUI is a framework built with:
 ## Agent-Specific Rules
 
 **Status**: 🔴 **MANDATORY - ENFORCED**
-**Last Updated**: January 2025
+**Last Updated**: 2026-05-08
 
 ### Rule #1: Legacy Code Removal (TOP PRIORITY)
 
