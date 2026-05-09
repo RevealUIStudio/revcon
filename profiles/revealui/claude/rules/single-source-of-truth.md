@@ -27,7 +27,7 @@ reads from and writes to this hub — regardless of which repo they were launche
 2. **Do NOT update `~/revfleet/revealui/docs/MASTER_PLAN.md` directly** — update the private version, sync later
 3. **Do NOT create files in `~/.claude/plans/`** — use in-conversation plans or MASTER_PLAN
 4. **Do NOT create planning/status files** (ACTION_PLAN.md, STATUS.md, TODO.md) anywhere — MASTER_PLAN is the only planning document
-5. **Do NOT write memory to the wrong project context** — use the suite memory directory
+5. **Do NOT write memory to the wrong project context** — use RevFleet memory directory
 
 ## On Session Start
 
