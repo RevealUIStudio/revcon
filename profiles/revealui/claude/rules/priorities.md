@@ -2,7 +2,7 @@
 
 ## Source of Truth
 
-All work must align with `~/projects/revealui-jv/docs/MASTER_PLAN.md`. If a task is not listed in the current phase of the master plan, do not work on it without explicit user approval.
+All work must align with `~/revfleet/.jv/docs/MASTER_PLAN.md`. If a task is not listed in the current phase of the master plan, do not work on it without explicit user approval.
 
 ## Current Phase: Phase 3 — Post-Launch
 
@@ -18,8 +18,8 @@ RevealUI is launched. Work now includes:
 ## Multi-Agent Awareness
 
 - You are one of potentially multiple Claude Code agents working on this repo
-- ALL agents share `~/projects/revealui-jv/docs/MASTER_PLAN.md` as their single source of truth
-- Before making architectural decisions, check the workboard (`~/projects/revealui-jv/.claude/workboard.md`) for other active agents
+- ALL agents share `~/revfleet/.jv/docs/MASTER_PLAN.md` as their single source of truth
+- Before making architectural decisions, check the workboard (`~/revfleet/.jv/.claude/workboard.md`) for other active agents
 - If another agent is working on a related area, coordinate via the workboard Context section
 - NEVER create plan documents outside of MASTER_PLAN.md — ephemeral session plans are OK but must not be treated as durable
 

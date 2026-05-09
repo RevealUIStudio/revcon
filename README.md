@@ -1,4 +1,4 @@
-# editor-configs
+# revcon
 
 Centralized editor configurations for RevealUI projects. Configs are symlinked
 into target projects — edits propagate instantly, nothing gets committed to
@@ -8,19 +8,19 @@ target repos.
 
 ```bash
 # Link into a project with a profile
-./link.sh --target ~/projects/RevealUI --profile revealui
+./link.sh --target ~/revfleet/revealui --profile revealui
 
 # Link base configs only (no profile)
 ./link.sh --target ~/projects/RevealCoin
 
 # Link a single editor
-./link.sh --target ~/projects/RevealUI --profile revealui --editor zed
+./link.sh --target ~/revfleet/revealui --profile revealui --editor zed
 
 # Preview without changes
-./link.sh --dry-run --target ~/projects/RevealUI --profile revealui
+./link.sh --dry-run --target ~/revfleet/revealui --profile revealui
 
 # Remove symlinks
-./unlink.sh --target ~/projects/RevealUI
+./unlink.sh --target ~/revfleet/revealui
 
 # List available profiles
 ./link.sh --list
@@ -146,7 +146,7 @@ revealui-harnesses content pull --generator claude-code --tier all
 To regenerate after updating definitions:
 
 ```bash
-cd ~/projects/RevealUI
+cd ~/revfleet/revealui
 node packages/harnesses/dist/cli.js content export --output ~/projects/editor-configs/harnesses
 ```
 
