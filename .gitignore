@@ -5,3 +5,9 @@ Thumbs.db
 # Session/runtime data
 *.log
 *.local
+
+# Claude Code per-developer state (settings.local.json, session caches,
+# worktrees). Keep out of git so accidentally-committed local settings
+# can't bypass the Private Leak Scan gate (per Codex P2 finding on
+# revdev#55 → revskills#9).
+.claude/
