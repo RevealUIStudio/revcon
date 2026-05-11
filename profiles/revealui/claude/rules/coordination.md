@@ -64,6 +64,34 @@ The receiving agent should:
 1. Remove the `HANDOFF->` prefix from the Plans task once picked up
 2. Update their own `task` column to reflect they've taken it over
 
+## Archive-Readiness Convention
+
+When preparing a session for archive (full handoff to a new session, not just a sub-agent handoff within the same session), the **final output to the owner** must be a copy-pasteable "next-agent prompt" they can drop straight into a new Claude Code session — no synthesis required, no jumping between docs to assemble context.
+
+The prompt is non-negotiable. Without it, the owner has to do friction work (read handoff doc + workboard + memories + figure out the first action) every time a session hands off. That friction adds up across the fleet.
+
+### What the prompt must include
+
+1. **Session id + handoff-doc path** as the first line. The next agent must read the handoff before doing anything else.
+2. **TL;DR**: 1–2 sentences capturing the lane's state and the single most important next action.
+3. **Ordered next-actions with exact commands / values / file paths**. No "investigate X" or "decide Y" — those belong in the handoff doc body. Prompt commands are mechanical and ready-to-run.
+4. **Locked-posture reminder** (one line): `core.fileMode=false`, explicit pathspec on `.jv`, `-F /tmp/cmsg-*.txt`, `--body-file`, no `--auto`, no `--no-verify`, audit-first SDLC, branch from `origin/test` for revealui PRs, etc.
+5. **Owner-gated deferrals** (one short list): any item the next agent should NOT auto-pick up without owner sign-off.
+
+### What the prompt must NOT include
+
+- Open-ended questions ("what do you think we should do about X?") — those belong in the handoff doc §"Open Questions" with read-before-acting framing.
+- Implementation details that change frequently — link to the handoff doc instead so a single source of truth wins.
+- Anything the owner has to fill in (paths, hashes, secrets to fetch) — pre-resolve at archive time. If the prompt needs `<paste prod URL here>`, you've failed.
+
+### Format
+
+Wrap the prompt in a single fenced code block (` ``` `) the owner can triple-click to select. End the archive turn with this block; nothing after it.
+
+### Convention added
+
+2026-05-11 by session 6176c881. Rationale: friction-elimination on session boundaries. Codified after the 2026-05-11 prod-deploy-gate-recovery session demonstrated that even with a thorough handoff doc + workboard Log entry + session beacon, the owner still had to construct the next-agent prompt by hand — pure overhead the convention now eliminates.
+
 ## Conflict Resolution
 
 - File reservations are **advisory**, not locks. If you must edit a reserved file, note it in Context so the other instance sees it on next read.
