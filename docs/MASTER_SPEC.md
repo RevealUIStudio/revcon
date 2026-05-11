@@ -141,7 +141,7 @@ The previous `@revealui/editors` package (in the RevealUI monorepo) was retired 
 
 ## Versioning
 
-Pre-1.0 per [`versioning.md`](https://github.com/RevealUIStudio/revealui-jv/blob/main/.claude/rules/versioning.md). No `package.json` — repo is shell scripts + config files. Version signal is git tag (none yet) + commits.
+Pre-1.0 per the fleet versioning convention (RevealUI Studio internal). No `package.json` — repo is shell scripts + config files. Version signal is git tag (none yet) + commits.
 
 ---
 
@@ -160,4 +160,4 @@ Pre-1.0 per [`versioning.md`](https://github.com/RevealUIStudio/revealui-jv/blob
 
 - [`docs/MASTER_PLAN.md`](./MASTER_PLAN.md) — current status, phases, owner actions
 - [`README.md`](../README.md) — quick start
-- [`revealui-jv:docs/MASTER_INDEX.md`](https://github.com/RevealUIStudio/revealui-jv/blob/main/docs/MASTER_INDEX.md) — fleet-level navigation
+- Fleet master index (`MASTER_INDEX.md` in the RevealUI Studio internal coordination hub) — fleet-level navigation

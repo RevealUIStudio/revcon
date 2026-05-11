@@ -7,7 +7,7 @@
       "command": "nvm use 24.12.0 && exec $SHELL",
       "env": {
         "NODE_ENV": "development",
-        "PATH": "/home/joshua-v-dev/.nvm/versions/node/v24.12.0/bin:$PATH"
+        "PATH": "${HOME}/.nvm/versions/node/v24.12.0/bin:$PATH"
       }
     }
   ],

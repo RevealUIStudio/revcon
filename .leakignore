@@ -1,0 +1,34 @@
+# .leakignore — allowed private-path references in this public repo.
+#
+# Format: <path-glob> <tag[,tag...]>   # reason
+#
+# The leak scanner (scripts/check-no-private-leaks.sh) ignores matches where
+# BOTH the file path matches the glob AND the leak tag is listed. Unknown
+# leaks still fail CI.
+
+# RevealUI profile rules describe RevealUI Studio's internal coordination
+# layout. The whole point of these rules is to teach Claude Code / Cursor
+# where the canonical fleet coordination files live. References to
+# ~/revfleet/.jv/ in these rules are by design — they're the RevealUI
+# profile's coordination posture. Other profiles (when added) would have
+# their own paths.
+profiles/revealui/claude/rules/agent-dispatch.md            private-jv-repo
+profiles/revealui/claude/rules/coordination.md              private-jv-repo
+profiles/revealui/claude/rules/priorities.md                private-jv-repo
+profiles/revealui/claude/rules/single-source-of-truth.md    private-jv-repo
+profiles/revealui/cursor/rules.md                           private-jv-repo
+
+# Safety skills document /mnt/c/ and /mnt/e/ as WSL mount points (mentioned
+# in a "Windows mounts (read-only)" list for agent awareness). Not actual
+# LTS-drive references.
+harnesses/generators/claude-code/.claude/skills/revealui-safety/SKILL.md    lts-drive
+harnesses/skills/oss/revealui-safety.md                                     lts-drive
+profiles/revealui/agents/skills/revealui-safety/SKILL.md                    lts-drive
+profiles/revealui/claude/skills/revealui-safety/SKILL.md                    lts-drive
+
+# Vercel deploy skill carries the project-ID lookup table for the RevealUI
+# profile. IDs are operational identifiers (not secrets) — they identify
+# RevealUI Studio's own Vercel projects. Other profiles would carry their
+# own. Allowlisted as operational disclosure; follow-on improvement is to
+# redact to placeholders + move the lookup to a private dimension.
+profiles/revealui/claude/skills/revealui-deploy/SKILL.md    vercel-project-id
