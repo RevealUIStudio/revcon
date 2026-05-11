@@ -8,19 +8,19 @@
 
 # RevealUI profile rules describe RevealUI Studio's internal coordination
 # layout. The whole point of these rules is to teach Claude Code / Cursor
-# where the canonical fleet coordination files live. References to
-# ~/revfleet/.jv/ in these rules are by design — they're the RevealUI
-# profile's coordination posture. Other profiles (when added) would have
-# their own paths.
+# where the canonical fleet coordination files live. References to the
+# private coordination hub in these rules are by design — they're the
+# RevealUI profile's coordination posture. Other profiles (when added)
+# would have their own paths.
 profiles/revealui/claude/rules/agent-dispatch.md            private-jv-repo
 profiles/revealui/claude/rules/coordination.md              private-jv-repo
 profiles/revealui/claude/rules/priorities.md                private-jv-repo
 profiles/revealui/claude/rules/single-source-of-truth.md    private-jv-repo
 profiles/revealui/cursor/rules.md                           private-jv-repo
 
-# Safety skills document /mnt/c/ and /mnt/e/ as WSL mount points (mentioned
-# in a "Windows mounts (read-only)" list for agent awareness). Not actual
-# LTS-drive references.
+# Safety skills document Windows mount points (mentioned in a "Windows
+# mounts (read-only)" list for agent awareness). Not actual LTS-drive
+# references in code.
 harnesses/generators/claude-code/.claude/skills/revealui-safety/SKILL.md    lts-drive
 harnesses/skills/oss/revealui-safety.md                                     lts-drive
 profiles/revealui/agents/skills/revealui-safety/SKILL.md                    lts-drive
