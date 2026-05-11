@@ -4,9 +4,9 @@
 **Status:** Active — symlink-based config sync; one profile shipped (`revealui`)
 **Owner:** RevealUI Studio (`founder@revealui.com`)
 **Repo:** [RevealUIStudio/revcon](https://github.com/RevealUIStudio/revcon)
-**Fleet master index:** [`revealui-jv:docs/MASTER_INDEX.md`](https://github.com/RevealUIStudio/revealui-jv/blob/main/docs/MASTER_INDEX.md)
+**Fleet master index:** RevealUI Studio internal coordination hub (`MASTER_INDEX.md`, private).
 
-> Fleet-level cross-cutting plans live in [`revealui-jv:docs/MASTER_PLAN.md`](https://github.com/RevealUIStudio/revealui-jv/blob/main/docs/MASTER_PLAN.md). This file is RevCon-scoped only.
+> Fleet-level cross-cutting plans live in the internal coordination hub's `MASTER_PLAN.md`. This file is RevCon-scoped only.
 
 ---
 
@@ -67,7 +67,7 @@ No active feature work. Recent stability — RevCon has been stable since the ha
 
 ## Roadmap
 
-Pre-1.0 per [`versioning.md`](https://github.com/RevealUIStudio/revealui-jv/blob/main/.claude/rules/versioning.md). Promotion gated on a second profile being added (proves the abstraction is real, not just RevealUI-specific).
+Pre-1.0 per the fleet versioning convention (RevealUI Studio internal). Promotion gated on a second profile being added (proves the abstraction is real, not just RevealUI-specific).
 
 ### Phase 0 — Symlink-based sync for RevealUI (DONE)
 
@@ -104,4 +104,4 @@ If a contributor edits agent rules inside a linked target, surface the diff back
 
 - [`docs/MASTER_SPEC.md`](./MASTER_SPEC.md) — surface area + symlink contract
 - [`README.md`](../README.md) — quick start + usage patterns
-- [`revealui-jv:docs/MASTER_INDEX.md`](https://github.com/RevealUIStudio/revealui-jv/blob/main/docs/MASTER_INDEX.md) — fleet-level navigation
+- Fleet master index (`MASTER_INDEX.md` in the RevealUI Studio internal coordination hub) — fleet-level navigation
