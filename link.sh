@@ -2,9 +2,9 @@
 # link.sh — Symlink editor configs into a target project.
 #
 # Usage:
-#   ./link.sh --target ~/projects/RevealUI --profile revealui
-#   ./link.sh --target ~/projects/RevealCoin                    # base only
-#   ./link.sh --target ~/projects/RevealUI --editor zed         # zed only
+#   ./link.sh --target ~/revfleet/revealui --profile revealui
+#   ./link.sh --target ~/revfleet/revealcoin                    # base only
+#   ./link.sh --target ~/revfleet/revealui --editor zed         # zed only
 #   ./link.sh --list                                            # show available profiles
 #
 # Creates real directories (.zed/, .cursor/, .claude/, .agents/) in the target,
@@ -41,11 +41,11 @@ Environment variables:
                               private profiles take precedence over in-repo ones.
 
 Examples:
-  ./link.sh --target ~/projects/RevealUI --profile revealui
-  ./link.sh --target ~/projects/RevealCoin --editor zed
-  ./link.sh --dry-run --target ~/projects/Foo --profile revealui
-  ./link.sh --target ~/projects/Foo --profile revealui --skip cursor
-  REVCON_SKIP_EDITORS=cursor ./link.sh --target ~/projects/Foo --profile revealui
+  ./link.sh --target ~/revfleet/revealui --profile revealui
+  ./link.sh --target ~/revfleet/revealcoin --editor zed
+  ./link.sh --dry-run --target ~/revfleet/foo --profile revealui
+  ./link.sh --target ~/revfleet/foo --profile revealui --skip cursor
+  REVCON_SKIP_EDITORS=cursor ./link.sh --target ~/revfleet/foo --profile revealui
 EOF
   exit 0
 }
