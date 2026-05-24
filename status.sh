@@ -2,11 +2,11 @@
 # status.sh — Report which editor-config profiles are linked where.
 #
 # Usage:
-#   ./status.sh                                        # scan ~/projects/*/
-#   ./status.sh --target ~/projects/RevealUI           # check one target
+#   ./status.sh                                        # scan ~/revfleet/*/ + ~/projects/*/
+#   ./status.sh --target ~/revfleet/revealui           # check one target
 #   ./status.sh --editor zed                           # filter to zed only
 #   ./status.sh --json                                 # machine-readable output
-#   ./status.sh --target ~/projects/RevealUI --json    # combined
+#   ./status.sh --target ~/revfleet/revealui --json    # combined
 
 set -euo pipefail
 
@@ -22,7 +22,7 @@ usage() {
 Usage: status.sh [OPTIONS]
 
 Options:
-  --target DIR     Check a specific project directory (default: scan ~/projects/*/)
+  --target DIR     Check a specific project directory (default: scan ~/revfleet/*/ + ~/projects/*/)
   --editor NAME    Filter to editor: cursor, zed, vscode (default: all)
   --skip NAME      Skip a specific editor (repeatable, comma-separated also works)
   --json           Machine-readable JSON output
@@ -34,9 +34,9 @@ Environment variables:
 
 Examples:
   ./status.sh
-  ./status.sh --target ~/projects/RevealUI
+  ./status.sh --target ~/revfleet/revealui
   ./status.sh --editor zed --json
-  ./status.sh --target ~/projects/RevealUI --editor cursor --json
+  ./status.sh --target ~/revfleet/revealui --editor cursor --json
 EOF
   exit 0
 }
@@ -93,9 +93,9 @@ fi
 
 # --- Discovery ---
 
-# Scan ~/projects/*/ for directories with symlinks pointing back to this repo.
+# Scan ~/revfleet/*/ + ~/projects/*/ for directories with symlinks pointing back to this repo.
 discover_targets() {
-  for dir in "$HOME"/projects/*/; do
+  for dir in "$HOME"/revfleet/*/ "$HOME"/projects/*/; do
     [[ -d "$dir" ]] || continue
     local dir_real
     dir_real="$(realpath "$dir")"

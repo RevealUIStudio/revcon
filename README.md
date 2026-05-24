@@ -11,7 +11,7 @@ target repos.
 ./link.sh --target ~/revfleet/revealui --profile revealui
 
 # Link base configs only (no profile)
-./link.sh --target ~/projects/RevealCoin
+./link.sh --target ~/revfleet/revealcoin
 
 # Link a single editor
 ./link.sh --target ~/revfleet/revealui --profile revealui --editor zed
@@ -88,7 +88,7 @@ additive mechanisms are available — defaults are unchanged.
 
 ```bash
 # Per-invocation
-./link.sh --target ~/projects/Foo --profile revealui --skip cursor
+./link.sh --target ~/revfleet/foo --profile revealui --skip cursor
 
 # Default for your machine — set in ~/.bashrc / ~/.zshrc
 export REVCON_SKIP_EDITORS=cursor
@@ -111,7 +111,7 @@ mkdir -p ~/private/revcon-profiles/joshua/{zed,claude}
 # Drop your proprietary configs (rules, MCP servers, custom commands) under that tree.
 # Same layout as profiles/<name>/<editor>/.
 
-./link.sh --target ~/projects/Foo --profile joshua
+./link.sh --target ~/revfleet/foo --profile joshua
 # Resolves to ~/private/revcon-profiles/joshua/, NOT this repo.
 ```
 
@@ -147,7 +147,7 @@ To regenerate after updating definitions:
 
 ```bash
 cd ~/revfleet/revealui
-node packages/harnesses/dist/cli.js content export --output ~/projects/editor-configs/harnesses
+node packages/harnesses/dist/cli.js content export --output ~/revfleet/revcon/harnesses
 ```
 
 ### OSS vs Pro
