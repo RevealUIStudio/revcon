@@ -127,6 +127,8 @@ private dir as well, and `status.sh` reports them as `private:<rel-path>` source
 | Zed | `.zed/` | Full support |
 | VS Code | `.vscode/` | Placeholder |
 
+Besides `cursor`, `zed`, `vscode`, and `all`, `--editor` also accepts `claude` and `agents` to link the generated AI harness content: `claude` writes the full `.claude/` tree (rules, commands, agents, skills) and `agents` links agent profiles only. See [Harnesses Content](#harnesses-content).
+
 ## Harnesses Content
 
 The `harnesses/` directory contains AI coding rules, commands, agents, and skills
