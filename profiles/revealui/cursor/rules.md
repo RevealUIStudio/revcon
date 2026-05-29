@@ -4,13 +4,12 @@ alwaysApply: true
 
 # RevealUI Framework - Cursor IDE Rules
 
-**Note (2026-05-08):** This file's app-structure references (L18-26) are outdated as of 2026-05-08; full content audit deferred. Authoritative agent rules live in `~/.claude/rules/` and `~/revfleet/.jv/.claude/rules/`.
+**Note (2026-05-29):** Authoritative agent rules live in `~/.claude/rules/` and `~/revfleet/.jv/.claude/rules/`. The architecture map below was reconciled with the RevealUI monorepo (`apps/*` + `packages/*`) on 2026-05-29.
 
 ## Project Overview
 RevealUI is a framework built with:
 - **React 19** with React Compiler
 - **Next.js 16** (admin app)
-- **RevealUI** (Web app)
 - **@revealui/core** (Native admin framework)
 - **@revealui/db** (Drizzle ORM)
 - **TypeScript** (strict mode)
@@ -18,14 +17,42 @@ RevealUI is a framework built with:
 - **Monorepo** structure (pnpm workspaces)
 
 ## Architecture
-- `apps/admin` - Next.js 16 + @revealui/core application
-- `apps/mainframe` - RevealUI + React application
-- `packages/core` - Core admin framework package (@revealui/core)
-- `packages/db` - Drizzle ORM schemas for NeonDB
-- `packages/schema` - Zod schemas
-- `packages/services` - Shared services (Stripe, Supabase)
-- `packages/dev` - Development tooling
-- `packages/test` - Test utilities
+
+Monorepo (pnpm workspaces): `apps/*` + `packages/*`.
+
+**Apps** (`apps/`):
+- `admin` - Next.js 16 admin dashboard, built on @revealui/core (Turbopack, standalone output)
+- `server` - REST API server with OpenAPI spec + Swagger UI
+- `marketing` - Marketing site (homepage, blog, pricing, contact)
+- `docs` - Documentation site
+
+**Packages** (`packages/`, alphabetical):
+- `@revealui/ai` - AI runtime (Fair Source): agents, memory, open-model LLM providers, tools, orchestration; Anthropic-SDK-free
+- `@revealui/auth` - DB-backed session auth for Hono + Next.js (bcrypt, OAuth, brute-force protection, rate limiting, password reset)
+- `@revealui/cache` - Framework-agnostic CDN config, edge cache, ISR presets, revalidation
+- `@revealui/cli` - Scaffolds new RevealUI projects
+- `@revealui/config` - Type-safe env configuration with Zod validation + lazy proxy
+- `@revealui/contracts` - Single source of truth for Zod schemas + shared TypeScript types
+- `@revealui/core` - Runtime engine: admin UI, REST API, auth, rich text, plugins, access control
+- `create-revealui` - Project initializer (`npm create revealui`)
+- `@revealui/db` - Drizzle ORM schema (85 tables) on NeonDB (Postgres)
+- `@revealui/dev` - Internal dev config (Biome, TypeScript, Tailwind, Vite, PostCSS); not published
+- `@revealui/engines` - Unified entry for the five business primitives: users, content, products, payments, intelligence
+- `@revealui/harnesses` - AI harness integration: adapters, daemon, workboard coordination, JSON-RPC
+- `@revealui/mcp` - Model Context Protocol framework: server hypervisor, tool discovery, adapters (Stripe, Supabase, Vercel)
+- `@revealui/openapi` - Type-safe OpenAPI 3.x for Hono (route defs, Zod middleware, spec generation)
+- `@revealui/paywall` - Runtime license enforcement, feature gating, upgrade UI
+- `@revealui/presentation` - Native React UI components on Tailwind v4
+- `@revealui/resilience` - Circuit breaker, retry, bulkhead, timeout (DB-backed circuit state)
+- `revealui` - Meta-installer that proxies to create-revealui (not published)
+- `@revealui/router` - File-based React router (SSR, loaders, middleware, nested layouts)
+- `@revealui/scripts` - Shared monorepo-script utilities (glob, JSON parse, logging)
+- `@revealui/security` - CSP/CORS/HSTS headers, RBAC + ABAC policy engine, encryption, audit logging, GDPR
+- `@revealui/services` - External integrations: Stripe (billing) and Vercel (deploy/DNS)
+- `@revealui/setup` - New-project setup: env config, DB init, secrets validation (used by the CLI)
+- `@revealui/sync` - Real-time sync over ElectricSQL + Yjs CRDT (offline queue, conflict resolution, collaborative docs)
+- `test` - E2E (Playwright), integration tests, fixtures, mocks, test utilities
+- `@revealui/utils` - Shared utilities: logger, SSL config, validation helpers
 
 ## Key Conventions
 
