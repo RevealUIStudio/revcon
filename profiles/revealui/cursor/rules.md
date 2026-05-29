@@ -138,7 +138,7 @@ RevealUI is a framework built with:
 
 **ALL IMPLEMENTATIONS MUST BE CURRENT. LEGACY/DEPRECATED CODE MUST BE REFACTORED TO USE NEW IMPLEMENTATIONS AND OLD CODE REMOVED.**
 
-This is the **#1 priority** for every agent interaction. See `LEGACY-CODE-REMOVAL-POLICY.md` for details.
+This is the **#1 priority** for every agent interaction.
 
 **Before Every Change:**
 
@@ -205,5 +205,3 @@ When new implementations are created:
 **Every agent interaction must follow these rules. No exceptions.**
 
 If you find legacy code, you MUST refactor it as part of your current task. Do not create separate migration tasks. Do not defer removal.
-
-**See Also**: `LEGACY-CODE-REMOVAL-POLICY.md` for detailed policy.
