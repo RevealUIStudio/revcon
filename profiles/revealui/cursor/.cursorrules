@@ -3,17 +3,20 @@
 You are working on the RevealUI Framework, an enterprise-grade React 19 framework with Next.js 16 and RevealUI.
 
 ## Project Structure
-- `apps/admin` - Next.js 16 + application
-- `apps/mainframe` - RevealUI + React application
-- `packages/reveal` - Core framework package
-- `packages/services` - Shared services (Stripe, Supabase)
-- `packages/dev` - Development tooling
-- `packages/test` - Test utilities
+
+Monorepo (pnpm workspaces): `apps/*` + `packages/*`.
+
+Apps:
+- `apps/admin` - Next.js 16 admin dashboard (built on @revealui/core)
+- `apps/server` - REST API server (OpenAPI + Swagger UI)
+- `apps/marketing` - Marketing site (homepage, blog, pricing)
+- `apps/docs` - Documentation site
+
+Packages (26 under `packages/`): core (runtime engine), db (Drizzle ORM, 85 tables on NeonDB), contracts (Zod schemas + shared types), auth, security, services (Stripe + Vercel), ai, mcp, engines, sync, router, presentation, paywall, cache, resilience, openapi, config, harnesses, setup, cli, utils, scripts, dev — all `@revealui/*` — plus `create-revealui`, `revealui` (meta-installer), and `test`.
 
 ## Key Technologies
 - React 19 with React Compiler
 - Next.js 16 (admin app)
-- RevealUI (Web app)
 - TypeScript (strict mode)
 - Tailwind CSS 4.0
 - pnpm workspaces (monorepo)
