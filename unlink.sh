@@ -57,8 +57,12 @@ should_skip_editor() {
 
 is_revcon_link() {
   local dest="$1"
-  [[ "$dest" == "$SCRIPT_DIR"* ]] && return 0
-  [[ -n "$PRIVATE_PROFILES_DIR" && "$dest" == "$PRIVATE_PROFILES_DIR"* ]] && return 0
+  # Match the repo dir itself or paths strictly beneath it. A bare prefix
+  # match ("$SCRIPT_DIR"*) would also match siblings like "<repo>-backups/...",
+  # which here means deleting (unlink.sh) or mis-reporting (status.sh) symlinks
+  # that revcon does not own.
+  [[ "$dest" == "$SCRIPT_DIR" || "$dest" == "$SCRIPT_DIR"/* ]] && return 0
+  [[ -n "$PRIVATE_PROFILES_DIR" && ( "$dest" == "$PRIVATE_PROFILES_DIR" || "$dest" == "$PRIVATE_PROFILES_DIR"/* ) ]] && return 0
   return 1
 }
 
