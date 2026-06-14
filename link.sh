@@ -3,20 +3,23 @@
 #
 # Usage:
 #   ./link.sh --target ~/revfleet/revealui --profile revealui
+#   ./link.sh --target ~/revfleet/revealui --profile revfleet --profile revealui
 #   ./link.sh --target ~/revfleet/revealcoin                    # base only
 #   ./link.sh --target ~/revfleet/revealui --editor zed         # zed only
 #   ./link.sh --list                                            # show available profiles
 #
 # Creates real directories (.zed/, .cursor/, .claude/, .agents/) in the target,
-# then symlinks individual config files from base/ and optionally a profile overlay.
-# Profile files override base files where filenames overlap.
+# then symlinks individual config files from base/ and optionally one or more
+# profile overlays. --profile is repeatable; profiles are applied in the order
+# given, and later profiles override earlier ones on filename collisions
+# (base → first profile → second profile → ...).
 # Adds symlinked dirs to the target's .gitignore.
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 TARGET=""
-PROFILE=""
+PROFILES=()
 EDITOR="all"
 DRY_RUN=false
 SKIP_EDITORS="${REVCON_SKIP_EDITORS:-}"
@@ -28,7 +31,8 @@ Usage: link.sh [OPTIONS]
 
 Options:
   --target DIR     Project directory to link into (required)
-  --profile NAME   Profile overlay (e.g., revealui, revealcoin)
+  --profile NAME   Profile overlay (repeatable; later wins on collision)
+                   Examples: revfleet, revealui, revealcoin
   --editor NAME    Editor to link: cursor, zed, vscode, claude, agents, all (default: all)
   --skip NAME      Skip a specific editor (repeatable, comma-separated also works)
   --dry-run        Show what would be done without making changes
@@ -42,10 +46,11 @@ Environment variables:
 
 Examples:
   ./link.sh --target ~/revfleet/revealui --profile revealui
-  ./link.sh --target ~/revfleet/revealcoin --editor zed
-  ./link.sh --dry-run --target ~/revfleet/foo --profile revealui
-  ./link.sh --target ~/revfleet/foo --profile revealui --skip cursor
-  REVCON_SKIP_EDITORS=cursor ./link.sh --target ~/revfleet/foo --profile revealui
+  ./link.sh --target ~/revfleet/revealui --profile revfleet --profile revealui
+  ./link.sh --target ~/revfleet/revealcoin --profile revfleet
+  ./link.sh --target ~/revfleet/foo --editor zed
+  ./link.sh --dry-run --target ~/revfleet/foo --profile revfleet
+  REVCON_SKIP_EDITORS=cursor ./link.sh --target ~/revfleet/foo --profile revfleet
 EOF
   exit 0
 }
@@ -70,7 +75,7 @@ list_profiles() {
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --target)  TARGET="$2";  shift 2 ;;
-    --profile) PROFILE="$2"; shift 2 ;;
+    --profile) PROFILES+=("$2"); shift 2 ;;
     --editor)  EDITOR="$2";  shift 2 ;;
     --skip)    SKIP_EDITORS="${SKIP_EDITORS:+$SKIP_EDITORS,}$2"; shift 2 ;;
     --dry-run) DRY_RUN=true; shift ;;
@@ -92,18 +97,20 @@ if [[ ! -d "$TARGET" ]]; then
   exit 1
 fi
 
-PROFILE_DIR=""
-if [[ -n "$PROFILE" ]]; then
-  if [[ -n "$PRIVATE_PROFILES_DIR" && -d "$PRIVATE_PROFILES_DIR/$PROFILE" ]]; then
-    PROFILE_DIR="$PRIVATE_PROFILES_DIR/$PROFILE"
-  elif [[ -d "$SCRIPT_DIR/profiles/$PROFILE" ]]; then
-    PROFILE_DIR="$SCRIPT_DIR/profiles/$PROFILE"
+# Resolve each profile name to its directory (private dir wins over in-repo).
+# Order is preserved so later profiles override earlier ones on file collisions.
+PROFILE_DIRS=()
+for profile in "${PROFILES[@]+"${PROFILES[@]}"}"; do
+  if [[ -n "$PRIVATE_PROFILES_DIR" && -d "$PRIVATE_PROFILES_DIR/$profile" ]]; then
+    PROFILE_DIRS+=("$PRIVATE_PROFILES_DIR/$profile")
+  elif [[ -d "$SCRIPT_DIR/profiles/$profile" ]]; then
+    PROFILE_DIRS+=("$SCRIPT_DIR/profiles/$profile")
   else
-    echo "Error: profile not found: $PROFILE"
+    echo "Error: profile not found: $profile"
     print_profiles
     exit 1
   fi
-fi
+done
 
 should_skip_editor() {
   local e="$1"
@@ -160,15 +167,20 @@ link_editor() {
   local editor="$1"
   local dot_dir="${EDITOR_DIRS[$editor]}"
   local base_src="$SCRIPT_DIR/base/$editor"
-  local profile_src="$PROFILE_DIR/$editor"
   local target_dir="$TARGET/$dot_dir"
 
   # Check if there are any files to link for this editor
-  local has_base=false has_profile=false
+  local has_base=false
+  local has_any_profile=false
   [[ -d "$base_src" ]] && has_base=true
-  [[ -n "$PROFILE" && -d "$profile_src" ]] && has_profile=true
+  for pdir in "${PROFILE_DIRS[@]+"${PROFILE_DIRS[@]}"}"; do
+    if [[ -d "$pdir/$editor" ]]; then
+      has_any_profile=true
+      break
+    fi
+  done
 
-  if ! $has_base && ! $has_profile; then
+  if ! $has_base && ! $has_any_profile; then
     return
   fi
 
@@ -179,8 +191,8 @@ link_editor() {
     mkdir -p "$target_dir"
   fi
 
-  # Collect all source files: base first, then profile overlays
-  # Use an associative array to deduplicate (profile wins)
+  # Collect all source files: base first, then each profile in order.
+  # Use an associative array to deduplicate (later overlay wins).
   declare -A file_map
 
   if $has_base; then
@@ -190,12 +202,14 @@ link_editor() {
     done < <(find "$base_src" -type f -print0 | sort -z)
   fi
 
-  if $has_profile; then
+  for pdir in "${PROFILE_DIRS[@]+"${PROFILE_DIRS[@]}"}"; do
+    local profile_src="$pdir/$editor"
+    [[ -d "$profile_src" ]] || continue
     while IFS= read -r -d '' file; do
       local rel="${file#"$profile_src/"}"
       file_map["$rel"]="$file"
     done < <(find "$profile_src" -type f -print0 | sort -z)
-  fi
+  done
 
   # Create subdirectories and symlink files
   for rel in $(printf '%s\n' "${!file_map[@]}" | sort); do
@@ -246,7 +260,9 @@ ensure_gitignored() {
 
 # Run
 echo "Linking editor configs → $TARGET"
-[[ -n "$PROFILE" ]] && echo "Profile: $PROFILE"
+if [[ ${#PROFILES[@]} -gt 0 ]]; then
+  echo "Profiles: ${PROFILES[*]}  (later overrides earlier on collision)"
+fi
 $DRY_RUN && echo "(dry run)"
 echo ""
 
