@@ -1,15 +1,15 @@
 # Database Migration Workflow
 
-Guide for creating and applying Drizzle ORM migrations in the RevealUI dual-database architecture.
+Guide for creating and applying Drizzle ORM migrations against the RevealUI single Neon-primary PostgreSQL database.
 
 ## Pre-Flight Checks
 
 Before creating a migration:
 
-1. **Identify the target database**:
-   - **NeonDB** (REST content): users, sessions, collections, products, orders, licenses, pages, sites, tickets, agents, api-keys, GDPR
-   - **Supabase** (vectors/auth): embeddings, AI memory storage, real-time auth
-   - If unsure, check `packages/db/src/schema/rest.ts` (NeonDB) vs `packages/db/src/schema/vector.ts` (Supabase)
+1. **Identify the schema area** (all on the single Neon database):
+   - **REST tables**: users, sessions, collections, products, orders, licenses, pages, sites, tickets, agents, api-keys, GDPR
+   - **Vector tables** (pgvector): embeddings, agent memory, RAG
+   - If unsure, check `packages/db/src/schema/rest.ts` (REST tables) vs `packages/db/src/schema/vector.ts` (pgvector tables) — both on the same Neon database
 
 2. **Check existing schema** for conflicts:
    ```bash
@@ -79,15 +79,15 @@ If you added new tables or columns that are exposed via the API:
 2. Export from `packages/contracts/src/index.ts`
 3. Update any API routes that use the new schema
 
-## Dual-DB Boundary Rules
+## Schema-Area Guidance
 
 | If your change touches... | Put it in... | Client |
 |---------------------------|-------------|--------|
 | Content, users, sessions, products, orders | `packages/db/src/schema/` (NeonDB barrel) | Drizzle ORM |
-| Vector embeddings, AI memory | `packages/db/src/schema/vector.ts` | Supabase client |
-| Real-time auth helpers | `packages/db/src/auth/` | Supabase client |
+| Vector embeddings, AI memory | `packages/db/src/schema/vector.ts` (pgvector) | Drizzle / Neon |
+| Session auth | `packages/db/src/schema/users.ts` | Drizzle / Neon |
 
-**Never mix** NeonDB and Supabase operations in the same module.
+**All tables live on the single Neon database** — there is no second DB client to mix.
 
 ## Rollback
 

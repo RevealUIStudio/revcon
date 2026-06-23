@@ -15,14 +15,7 @@ Follow these rules for ALL code changes in the RevealUI monorepo.
 
 ## Import Boundaries
 
-`@supabase/supabase-js` is ONLY allowed in:
-
-- `packages/db/src/vector/`, `packages/db/src/auth/`
-- `packages/auth/src/`, `packages/ai/src/`
-- `packages/services/src/supabase/`
-- `apps/*/src/lib/supabase/`
-
-FORBIDDEN in: `packages/core/`, `packages/contracts/`, `packages/config/`, `apps/admin/src/collections/`, `apps/admin/src/routes/`
+All persistence goes through the single Drizzle/Neon client (`@revealui/db`). Do not introduce a second database client or a separate vector/auth SDK — vector data lives in pgvector on the same Neon database. (A customer-facing Supabase MCP adapter exists for connecting a customer's own Supabase project; that is not an internal store.)
 
 ## Code Quality
 

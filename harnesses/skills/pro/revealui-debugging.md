@@ -56,5 +56,5 @@ When something breaks, follow this process. Do not skip steps.
 | Import error | Package built? `pnpm --filter <pkg> build` |
 | Type error across packages | `pnpm typecheck:all` — check `workspace:*` versions |
 | Test passes alone, fails in gate | Concurrency pressure — see `$revealui-testing` |
-| Supabase error in unexpected path | Import boundary violation — see `$revealui-db` |
+| DB/vector query error in unexpected path | Check you use the single `@revealui/db` Drizzle client — see `$revealui-db` |
 | Biome error after edit | Run `npx biome check --write <file>` |

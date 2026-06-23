@@ -33,12 +33,12 @@ Audit the codebase for security issues across these categories:
 
 ### 6. Dependency Security
 - Known vulnerabilities in direct dependencies
-- Supabase boundary violations (imports outside permitted paths)
+- No second database client or unvetted DB SDK introduced (single Neon/Drizzle client)
 
 ## Architecture Context
 
 - **Auth**: Session-only (no JWT). `revealui-session` cookie across `.revealui.com`.
-- **Dual-DB**: NeonDB (REST content) + Supabase (vectors/auth). Strict import boundary.
+- **Database**: single Neon-primary PostgreSQL (Drizzle ORM); vector tables (agent memories, RAG) use pgvector on the same database; ElectricSQL provides live sync.
 - **Tiers**: free, pro, max, enterprise. License checks via `isLicensed()`.
 - **API**: Hono on port 3004. admin calls API cross-origin (CORS configured).
 
