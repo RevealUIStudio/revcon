@@ -33,7 +33,7 @@ This runs 15 checks covering lint, types, tests, build, security, and structure.
 |-------|--------------|------------|
 | **`any` audit** | Avoidable `any` types found | `pnpm audit:any` — use `unknown` + type guards |
 | **Console audit** | `console.*` in production code | `pnpm audit:console` — use `@revealui/utils` logger |
-| **Structure** | Supabase boundary violations or package issues | `pnpm validate:structure` |
+| **Structure** | Import-boundary or package-structure issues | `pnpm validate:structure` |
 | **Security** | CSP, CORS, or header issues | Check `packages/security/` |
 | **Dependencies** | Version mismatches across workspaces | `pnpm deps:check` then `pnpm deps:fix` |
 

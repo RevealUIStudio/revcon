@@ -35,7 +35,7 @@ pnpm gate:quick
 - [ ] Single responsibility — each file does one thing
 
 ### Architecture
-- [ ] No Supabase imports outside permitted paths
+- [ ] No second DB client introduced — persistence goes through the single `@revealui/db` Drizzle/Neon client
 - [ ] No cross-package relative imports (use `@revealui/<name>`)
 - [ ] Internal deps use `workspace:*`
 - [ ] OSS packages don't import from Pro packages

@@ -71,7 +71,7 @@
       "id": "database",
       "type": "rule",
       "name": "Database Conventions",
-      "description": "Dual-database architecture (NeonDB + Supabase) boundaries and query patterns",
+      "description": "Single Neon-primary PostgreSQL database (Drizzle ORM, pgvector, ElectricSQL) conventions and query patterns",
       "tier": "oss",
       "canonicalPath": "rules/oss/database.md",
       "generatorPaths": {
@@ -328,7 +328,7 @@
       "id": "db-migrate",
       "type": "skill",
       "name": "Database Migration",
-      "description": "Create and apply Drizzle ORM migrations with dual-DB boundary checks (NeonDB vs Supabase)",
+      "description": "Create and apply Drizzle ORM migrations against the single Neon-primary PostgreSQL database",
       "tier": "pro",
       "canonicalPath": "skills/pro/db-migrate.md",
       "generatorPaths": {
@@ -367,7 +367,7 @@
       "id": "revealui-db",
       "type": "skill",
       "name": "RevealUI Database",
-      "description": "RevealUI database conventions for any task involving database, schema, query, migration,\nDrizzle ORM, Supabase, NeonDB, PostgreSQL, vectors, embeddings, or data modeling.\nEnforces dual-database architecture boundaries and import restrictions.",
+      "description": "RevealUI database conventions for any task involving database, schema, query, migration,\nDrizzle ORM, Neon, PostgreSQL, pgvector, vectors, embeddings, or data modeling.\nCovers the single Neon-primary database and its pgvector tables.",
       "tier": "pro",
       "canonicalPath": "skills/pro/revealui-db.md",
       "generatorPaths": {

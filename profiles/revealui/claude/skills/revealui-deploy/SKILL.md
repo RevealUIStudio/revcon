@@ -11,7 +11,7 @@ description: |
 
 ## Architecture
 
-RevealUI deploys 5 apps via GitHub Actions to Vercel. Vercel Git Integration is DISABLED — all deploys go through `.github/workflows/deploy.yml`. Only `test` and `main` branches trigger deploys; `develop` is local-only.
+RevealUI deploys 4 apps via GitHub Actions to Vercel. Vercel Git Integration is DISABLED — all deploys go through `.github/workflows/deploy.yml`. Only `test` and `main` branches trigger deploys; `develop` is local-only.
 
 ### Branch-to-Environment Mapping
 
@@ -30,7 +30,6 @@ RevealUI deploys 5 apps via GitHub Actions to Vercel. Vercel Git Integration is 
 | admin | `prj_7sEFDg4MH6C26nJPjrukK86QdwfG` | admin.revealui.com | test.admin.revealui.com |
 | marketing | `prj_frTIYlnONVPLNIjKnQpINiGb5lm0` | revealui.com | test.revealui.com |
 | docs | `prj_OPwr0FrgcK17AOBCyoj4JIilJ9S1` | docs.revealui.com | test.docs.revealui.com |
-| revealcoin | `prj_XDiPXngciRytGA8j0vNIDz7hENRM` | revealcoin.revealui.com | test.revealcoin.revealui.com |
 
 ## GitHub Actions Secrets
 
@@ -85,7 +84,7 @@ File: `.github/workflows/deploy.yml`
 
 ### Flow
 1. **Resolve** — determines environment from branch name
-2. **Deploy** — 5 apps in parallel via matrix strategy:
+2. **Deploy** — 4 apps in parallel via matrix strategy:
    - `vercel pull` — fetches env vars and project settings
    - `vercel build` — builds with Vercel's build system
    - `vercel deploy --prebuilt` — deploys build output
