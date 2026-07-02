@@ -61,7 +61,7 @@ RevCon is **not Pro-gated** — any contributor can run `link.sh` and get the te
 | **RevealUI** | Symlinks `.cursor/`, `.zed/`, `.claude/` into the RevealUI monorepo |
 | **RevDev** | Studio integrates with RevCon for editor configs |
 | **RevKit** | RevKit provisions portable Zed config; RevCon overlays project-specific configs (no overlap) |
-| **RevVault, RevForge, RevealCoin, RevSkills** | Independent — RevCon doesn't touch their internals |
+| **RevVault, RevForge, RevSkills** | Independent — RevCon doesn't touch their internals |
 
 ---
 

@@ -160,7 +160,7 @@ Pre-1.0 per the fleet versioning convention (RevealUI Studio internal). No `pack
 | **RevealUI** | Primary consumer — `revealui` profile carries the monorepo's editor + agent posture |
 | **RevDev** | Studio integrates RevCon for editor configs |
 | **RevKit** | Pairs cleanly — RevKit installs portable Zed config; RevCon overlays project-specific configs |
-| **RevVault, RevForge, RevealCoin, RevSkills, .jv** | Independent |
+| **RevVault, RevForge, RevSkills, .jv** | Independent |
 
 ---
 
