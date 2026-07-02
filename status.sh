@@ -23,7 +23,7 @@ Usage: status.sh [OPTIONS]
 
 Options:
   --target DIR     Check a specific project directory (default: scan ~/revfleet/*/ + ~/projects/*/)
-  --editor NAME    Filter to editor: cursor, zed, vscode (default: all)
+  --editor NAME    Filter to editor: cursor, zed, vscode, claude, agents (default: all)
   --skip NAME      Skip a specific editor (repeatable, comma-separated also works)
   --json           Machine-readable JSON output
   -h, --help       Show this help
@@ -74,18 +74,20 @@ declare -A EDITOR_DIRS=(
   [cursor]=".cursor"
   [zed]=".zed"
   [vscode]=".vscode"
+  [claude]=".claude"
+  [agents]=".agents"
 )
 
 # Build list of editors to check
 EDITORS=()
 if [[ "$EDITOR" == "all" ]]; then
-  for e in cursor zed vscode; do
+  for e in cursor zed vscode claude agents; do
     should_skip_editor "$e" && continue
     EDITORS+=("$e")
   done
 else
   if [[ -z "${EDITOR_DIRS[$EDITOR]+x}" ]]; then
-    echo "Error: unknown editor: $EDITOR (expected cursor, zed, or vscode)"
+    echo "Error: unknown editor: $EDITOR (expected cursor, zed, vscode, claude, or agents)"
     exit 1
   fi
   if should_skip_editor "$EDITOR"; then
