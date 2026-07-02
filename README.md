@@ -29,7 +29,7 @@ target repos.
 ## Structure
 
 ```
-editor-configs/
+revcon/
 ├── base/                          # Universal configs (all projects)
 │   ├── cursor/
 │   │   ├── .cursorignore
