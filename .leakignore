@@ -26,3 +26,8 @@ harnesses/skills/oss/revealui-safety.md                                     lts-
 profiles/revealui/agents/skills/revealui-safety/SKILL.md                    lts-drive
 profiles/revealui/claude/skills/revealui-safety/SKILL.md                    lts-drive
 
+
+# By-design: the anti-regression CI job must name the /mnt/c/Users literal in
+# its grep pattern to scan for it. This is the workflow that enforces the
+# rule, not a leak of it (mirrors revkit's bare-username entry).
+.github/workflows/ci.yml                abs-wsl-windows-user
