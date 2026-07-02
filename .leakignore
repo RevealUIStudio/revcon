@@ -26,12 +26,6 @@ harnesses/skills/oss/revealui-safety.md                                     lts-
 profiles/revealui/agents/skills/revealui-safety/SKILL.md                    lts-drive
 profiles/revealui/claude/skills/revealui-safety/SKILL.md                    lts-drive
 
-# Vercel deploy skill carries the project-ID lookup table for the RevealUI
-# profile. IDs are operational identifiers (not secrets) — they identify
-# RevealUI Studio's own Vercel projects. Other profiles would carry their
-# own. Allowlisted as operational disclosure; follow-on improvement is to
-# redact to placeholders + move the lookup to a private dimension.
-profiles/revealui/claude/skills/revealui-deploy/SKILL.md    vercel-project-id
 
 # By-design: the anti-regression CI job must name the /mnt/c/Users literal in
 # its grep pattern to scan for it. This is the workflow that enforces the

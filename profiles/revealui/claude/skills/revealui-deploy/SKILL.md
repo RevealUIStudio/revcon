@@ -24,12 +24,16 @@ RevealUI deploys 4 apps via GitHub Actions to Vercel. Vercel Git Integration is 
 
 ### App Matrix
 
-| App | Vercel Project ID | Prod Domain | Test Domain |
-|-----|------------------|-------------|-------------|
-| api | `prj_zk6EQijYXwd9L7BccuBssi436ktM` | api.revealui.com | test.api.revealui.com |
-| admin | `prj_7sEFDg4MH6C26nJPjrukK86QdwfG` | admin.revealui.com | test.admin.revealui.com |
-| marketing | `prj_frTIYlnONVPLNIjKnQpINiGb5lm0` | revealui.com | test.revealui.com |
-| docs | `prj_OPwr0FrgcK17AOBCyoj4JIilJ9S1` | docs.revealui.com | test.docs.revealui.com |
+| App | Prod Domain | Test Domain |
+|-----|-------------|-------------|
+| api | api.revealui.com | test.api.revealui.com |
+| admin | admin.revealui.com | test.admin.revealui.com |
+| marketing | revealui.com | test.revealui.com |
+| docs | docs.revealui.com | test.docs.revealui.com |
+
+Project IDs are intentionally not published here. Resolve them at run time with
+`vercel projects ls` (team scope) or from the Vercel dashboard (Project →
+Settings → General), and keep any written copy on a private surface.
 
 ## GitHub Actions Secrets
 
