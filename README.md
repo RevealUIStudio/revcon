@@ -11,7 +11,7 @@ target repos.
 ./link.sh --target ~/revfleet/revealui --profile revealui
 
 # Link base configs only (no profile)
-./link.sh --target ~/revfleet/revealcoin
+./link.sh --target ~/revfleet/revforge
 
 # Link a single editor
 ./link.sh --target ~/revfleet/revealui --profile revealui --editor zed
@@ -29,7 +29,7 @@ target repos.
 ## Structure
 
 ```
-editor-configs/
+revcon/
 ├── base/                          # Universal configs (all projects)
 │   ├── cursor/
 │   │   ├── .cursorignore
@@ -74,7 +74,7 @@ editor-configs/
 ## Adding a Profile
 
 ```bash
-mkdir -p profiles/revealcoin/cursor profiles/revealcoin/zed
+mkdir -p profiles/revforge/cursor profiles/revforge/zed
 # Add project-specific configs (MCP servers, tasks, rules, etc.)
 ```
 

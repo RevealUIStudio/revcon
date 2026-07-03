@@ -4,7 +4,7 @@
 # Usage:
 #   ./link.sh --target ~/revfleet/revealui --profile revealui
 #   ./link.sh --target ~/revfleet/revealui --profile revfleet --profile revealui
-#   ./link.sh --target ~/revfleet/revealcoin                    # base only
+#   ./link.sh --target ~/revfleet/revforge                    # base only
 #   ./link.sh --target ~/revfleet/revealui --editor zed         # zed only
 #   ./link.sh --list                                            # show available profiles
 #
@@ -32,7 +32,7 @@ Usage: link.sh [OPTIONS]
 Options:
   --target DIR     Project directory to link into (required)
   --profile NAME   Profile overlay (repeatable; later wins on collision)
-                   Examples: revfleet, revealui, revealcoin
+                   Examples: revfleet, revealui, revforge
   --editor NAME    Editor to link: cursor, zed, vscode, claude, agents, all (default: all)
   --skip NAME      Skip a specific editor (repeatable, comma-separated also works)
   --dry-run        Show what would be done without making changes
@@ -47,7 +47,7 @@ Environment variables:
 Examples:
   ./link.sh --target ~/revfleet/revealui --profile revealui
   ./link.sh --target ~/revfleet/revealui --profile revfleet --profile revealui
-  ./link.sh --target ~/revfleet/revealcoin --profile revfleet
+  ./link.sh --target ~/revfleet/revforge --profile revfleet
   ./link.sh --target ~/revfleet/foo --editor zed
   ./link.sh --dry-run --target ~/revfleet/foo --profile revfleet
   REVCON_SKIP_EDITORS=cursor ./link.sh --target ~/revfleet/foo --profile revfleet

@@ -69,10 +69,10 @@ revcon/
 Behavior:
 
 1. Validates `--target` exists and is a directory
-2. Computes the symlink set: `base/*` + (if profile) `profiles/<profile>/*` + (always) `harnesses/*`
+2. Computes the symlink set: `base/<editor>/*` + (if profile) `profiles/<profile>/*`. It does NOT link `harnesses/*` — harness content ships via the `revealui-harnesses` CLI, not `link.sh`.
 3. For each source file, creates a symlink at the corresponding target path
-4. **Existing symlinks**: silently overwritten (treated as a re-link)
-5. **Existing real files**: currently overwritten silently (Phase 1 fix planned: refuse without `--force`)
+4. **Existing symlink → a revcon source**: re-linked. **Existing symlink → a different source**: replaced with an `[update]` message (the `--force` guard for foreign symlinks is the open Phase 1 item)
+5. **Existing real files**: SKIPPED with a `[skip] … real file exists` message — never overwritten. Back up or remove the file to link over it
 6. Reports created/skipped counts
 
 ### `unlink.sh`
@@ -131,11 +131,11 @@ Adding a new profile = create the directory + populate it. No manifest file requ
 | Situation | Current behavior | Phase 1 target |
 |---|---|---|
 | Target has existing symlink → revcon source | Silently re-link | OK (no change) |
-| Target has existing symlink → other source | Silently overwrite | Refuse without `--force`; warn |
-| Target has existing real file | Silently overwrite | Refuse without `--force`; warn |
+| Target has existing symlink → other source | Replaced (`[update]` message) | Refuse without `--force`; warn |
+| Target has existing real file | Skipped (`[skip]` message) — never overwritten | (no change — already safe) |
 | Target file does not exist | Create symlink | OK (no change) |
 
-The current "silently overwrite" pattern is a known gap; Phase 1 in `MASTER_PLAN.md` adds the `--force` guard.
+Real files are already safe (skipped). The open Phase 1 gap is the foreign-*symlink* case: `link.sh` currently replaces a symlink pointing at a non-revcon source; Phase 1 in `MASTER_PLAN.md` adds a `--force` guard for that.
 
 ---
 
@@ -160,7 +160,7 @@ Pre-1.0 per the fleet versioning convention (RevealUI Studio internal). No `pack
 | **RevealUI** | Primary consumer — `revealui` profile carries the monorepo's editor + agent posture |
 | **RevDev** | Studio integrates RevCon for editor configs |
 | **RevKit** | Pairs cleanly — RevKit installs portable Zed config; RevCon overlays project-specific configs |
-| **RevVault, RevForge, RevealCoin, RevSkills, .jv** | Independent |
+| **RevVault, RevForge, RevSkills, .jv** | Independent |
 
 ---
 

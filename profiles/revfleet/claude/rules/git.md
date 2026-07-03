@@ -13,10 +13,15 @@
 - Chore: `chore/<short-description>` or `chore/<issue#>-<short-description>`
 - When fixing a GitHub issue, include the issue number in the branch name
 
+## Branch Flow (test → main)
+- Feature/fix/chore branches base on **`test`**, never `main`. Open the PR against `test`.
+- `main` only ever receives changes via a promotion PR whose head is `test` (enforced by `promotion-gate.yml`). Never push directly to `main` or `test`, and never open a feature PR directly against `main`.
+- Merge manually after review — no auto-merge.
+
 ## Issue → PR → Close Workflow
 - PRs that fix a GitHub issue MUST include `Closes #N` in the PR description
 - Place `Closes #N` at the top of the PR body (the template prompts for it)
-- GitHub auto-closes the issue when the PR merges to main
+- GitHub auto-closes the issue when the change reaches `main`. Because feature PRs merge to `test` first, the linked issue closes at the `test` → `main` promotion, not at the feature-PR merge
 - One PR can close multiple issues: `Closes #1, Closes #2`
 
 ## Identity
