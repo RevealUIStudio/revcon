@@ -239,7 +239,7 @@ pnpm --filter <package> test   # if you implemented a stub
 | Free | `'free'` | MIT, open source |
 | Pro | `'pro'` | Source-available, commercially licensed |
 | Max | `'max'` | Extended Pro features |
-| Enterprise (Forge) | `'enterprise'` | White-label, multi-tenant, self-hosted |
+| Enterprise | `'enterprise'` | White-label, multi-tenant, self-hosted |
 
 ### Runtime Checks
 

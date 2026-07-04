@@ -6,17 +6,11 @@
 # BOTH the file path matches the glob AND the leak tag is listed. Unknown
 # leaks still fail CI.
 
-# RevealUI profile rules describe RevealUI Studio's internal coordination
-# layout. The whole point of these rules is to teach Claude Code / Cursor
-# where the canonical fleet coordination files live. References to the
-# private coordination hub in these rules are by design — they're the
-# RevealUI profile's coordination posture. Other profiles (when added)
-# would have their own paths.
-profiles/revealui/claude/rules/agent-dispatch.md            private-jv-repo
-profiles/revealui/claude/rules/coordination.md              private-jv-repo
-profiles/revealui/claude/rules/priorities.md                private-jv-repo
-profiles/revealui/claude/rules/single-source-of-truth.md    private-jv-repo
-profiles/revealui/cursor/rules.md                           private-jv-repo
+# profiles/ MUST stay free of private (.jv) coordination paths. The profile
+# rules were sanitized to repo-relative paths (`.claude/workboard.md`,
+# `docs/MASTER_PLAN.md`) in the 2026-07-03 audit. Do NOT re-add a
+# `private-jv-repo` allowlist entry for anything under profiles/ — fix the
+# source file instead so the leak-check keeps failing on any new .jv path.
 
 # Safety skills document Windows mount points (mentioned in a "Windows
 # mounts (read-only)" list for agent awareness). Not actual LTS-drive
@@ -31,3 +25,10 @@ profiles/revealui/claude/skills/revealui-safety/SKILL.md                    lts-
 # its grep pattern to scan for it. This is the workflow that enforces the
 # rule, not a leak of it (mirrors revkit's bare-username entry).
 .github/workflows/ci.yml                abs-wsl-windows-user
+
+# By-design: the issue/PR-body leak-scan gitleaks config (consumed by
+# .github/workflows/issue-leak-scan.yml) must name the private-path and
+# username literals in its detection regexes + keywords to catch them in
+# issue bodies. This is the config that enforces the rule, not a leak of
+# it (mirrors the ci.yml anti-regression entries).
+.gitleaks.issues.toml                   lit-username,abs-home-path,private-jv-repo,private-jv-name

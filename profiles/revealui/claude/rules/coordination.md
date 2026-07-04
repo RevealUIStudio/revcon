@@ -1,6 +1,6 @@
 # Multi-Instance Coordination
 
-Multiple Claude Code instances may work on this repo simultaneously (e.g. terminal + Zed editor). A shared workboard at `~/revfleet/.jv/.claude/workboard.md` tracks sessions, tasks, and file reservations.
+Multiple Claude Code instances may work on this repo simultaneously (e.g. terminal + Zed editor). A shared workboard at `.claude/workboard.md` tracks sessions, tasks, and file reservations.
 
 ## Identity
 
@@ -75,7 +75,7 @@ The prompt is non-negotiable. Without it, the owner has to do friction work (rea
 1. **Session id + handoff-doc path** as the first line. The next agent must read the handoff before doing anything else.
 2. **TL;DR**: 1–2 sentences capturing the lane's state and the single most important next action.
 3. **Ordered next-actions with exact commands / values / file paths**. No "investigate X" or "decide Y" — those belong in the handoff doc body. Prompt commands are mechanical and ready-to-run.
-4. **Locked-posture reminder** (one line): `core.fileMode=false`, explicit pathspec on `.jv`, `-F /tmp/cmsg-*.txt`, `--body-file`, no `--auto`, no `--no-verify`, audit-first SDLC, branch from `origin/test` for revealui PRs, etc.
+4. **Locked-posture reminder** (one line): `core.fileMode=false`, explicit pathspec on shared checkouts, `-F /tmp/cmsg-*.txt`, `--body-file`, no `--auto`, no `--no-verify`, audit-first SDLC, branch from `origin/test`, etc.
 5. **Owner-gated deferrals** (one short list): any item the next agent should NOT auto-pick up without owner sign-off.
 
 ### What the prompt must NOT include
@@ -100,12 +100,12 @@ Wrap the prompt in a single fenced code block (` ``` `) the owner can triple-cli
 
 ## Master Plan Protocol
 
-1. **On session start**: Read `~/revfleet/.jv/docs/MASTER_PLAN.md` in full. Your work must align with the current phase.
+1. **On session start**: Read `docs/MASTER_PLAN.md` in full. Your work must align with the current phase.
 2. **Before starting any task**: Verify the task is listed in MASTER_PLAN.md's current phase. If not listed, ask the user before proceeding.
 3. **After completing any task**: Update MASTER_PLAN.md checkboxes and add a session entry to Completed Work.
 4. **When discovering new work**: Add it to the appropriate phase in MASTER_PLAN.md, do not create separate plan files.
 5. **When multiple agents are active**: Each agent must re-read MASTER_PLAN.md before starting new work to see if another agent has updated it.
-6. **When updating MASTER_PLAN.md**: Also update the Plan Reference section in `~/revfleet/.jv/.claude/workboard.md` with the current timestamp and your agent ID.
+6. **When updating MASTER_PLAN.md**: Also update the Plan Reference section in `.claude/workboard.md` with the current timestamp and your agent ID.
 
 ## Workboard Format
 
