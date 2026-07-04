@@ -2,37 +2,37 @@
 
 ## The Hub
 
-All agent coordination, planning, and status tracking flows through ONE location:
+All agent coordination, planning, and status tracking flows through ONE location per repo:
 
 ```
-~/revfleet/.jv/.claude/workboard.md   — agent coordination
-~/revfleet/.jv/docs/MASTER_PLAN.md    — planning & task tracking
+.claude/workboard.md   — agent coordination
+docs/MASTER_PLAN.md    — planning & task tracking
 ```
 
 **There are no exceptions.** Every agent, subagent, worktree agent, and background task
-reads from and writes to this hub — regardless of which repo they were launched from.
+reads from and writes to this hub — regardless of which working tree they were launched from.
 
 ## What Lives Where
 
-| Artifact | Canonical Location | Other copies |
-|----------|-------------------|--------------|
-| Workboard (agent sessions, tasks, files) | `~/revfleet/.jv/.claude/workboard.md` | `~/revfleet/revealui/.claude/workboard.md` = REDIRECT STUB ONLY |
-| Master Plan (phases, tasks, status) | `~/revfleet/.jv/docs/MASTER_PLAN.md` | `~/revfleet/revealui/docs/MASTER_PLAN.md` = PUBLIC SNAPSHOT (stale OK) |
-| Memory (persistent cross-session) | `~/.claude/projects/revfleet/memory/` | Project-scoped, do not duplicate |
-| Plans (ephemeral session) | In-conversation only (EnterPlanMode) | NEVER write to `~/.claude/plans/` — they rot |
+| Artifact | Canonical Location | Notes |
+|----------|-------------------|-------|
+| Workboard (agent sessions, tasks, files) | `.claude/workboard.md` | Ephemeral coordination only |
+| Master Plan (phases, tasks, status) | `docs/MASTER_PLAN.md` | Durable planning & task tracking |
+| Memory (persistent cross-session) | Project memory directory | Project-scoped, do not duplicate |
+| Plans (ephemeral session) | In-conversation only (EnterPlanMode) | NEVER write to a stray `plans/` directory — they rot |
 
 ## Prohibited Actions
 
-1. **Do NOT write agent sessions or tasks to `~/revfleet/revealui/.claude/workboard.md`** — it is a redirect stub
-2. **Do NOT update `~/revfleet/revealui/docs/MASTER_PLAN.md` directly** — update the private version, sync later
-3. **Do NOT create files in `~/.claude/plans/`** — use in-conversation plans or MASTER_PLAN
+1. **Do NOT scatter agent sessions or tasks across multiple workboards** — there is one workboard per repo
+2. **Do NOT keep parallel copies of the master plan** — `docs/MASTER_PLAN.md` is the one planning document; update it in place
+3. **Do NOT create files in a stray `plans/` directory** — use in-conversation plans or MASTER_PLAN
 4. **Do NOT create planning/status files** (ACTION_PLAN.md, STATUS.md, TODO.md) anywhere — MASTER_PLAN is the only planning document
-5. **Do NOT write memory to the wrong project context** — use RevFleet memory directory
+5. **Do NOT write memory to the wrong project context** — use the correct project memory directory
 
 ## On Session Start
 
-1. Read `~/revfleet/.jv/.claude/workboard.md` — check other agents' activity
-2. Read `~/revfleet/.jv/docs/MASTER_PLAN.md` — verify task alignment
+1. Read `.claude/workboard.md` — check other agents' activity
+2. Read `docs/MASTER_PLAN.md` — verify task alignment
 3. Update your workboard row with current task
 
 ## On Session End
@@ -51,5 +51,5 @@ check for orphaned worktrees and recover or discard.
 
 ## Memory Architecture
 
-- **RevFleet memory** (`~/.claude/projects/revfleet/memory/`): shared across RevFleet repos
-- Each project in RevFleet has its own memory directory; do not cross-pollinate
+- Project memory is shared across a project's agents; do not cross-pollinate between projects
+- Each project has its own memory directory; do not duplicate entries across contexts

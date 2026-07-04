@@ -4,7 +4,7 @@ alwaysApply: true
 
 # RevealUI Framework - Cursor IDE Rules
 
-**Note (2026-05-29):** Authoritative agent rules live in `~/.claude/rules/` and `~/revfleet/.jv/.claude/rules/`. The architecture map below was reconciled with the RevealUI monorepo (`apps/*` + `packages/*`) on 2026-05-29.
+**Note (2026-05-29):** Authoritative agent rules live in `~/.claude/rules/` and `.claude/rules/`. The architecture map below was reconciled with the RevealUI monorepo (`apps/*` + `packages/*`) on 2026-05-29.
 
 ## Project Overview
 RevealUI is a framework built with:
@@ -39,7 +39,7 @@ Monorepo (pnpm workspaces): `apps/*` + `packages/*`.
 - `@revealui/dev` - Internal dev config (Biome, TypeScript, Tailwind, Vite, PostCSS); not published
 - `@revealui/engines` - Unified entry for the five business primitives: users, content, products, payments, intelligence
 - `@revealui/harnesses` - AI harness integration: adapters, daemon, workboard coordination, JSON-RPC
-- `@revealui/mcp` - Model Context Protocol framework: server hypervisor, tool discovery, adapters (Stripe, Supabase, Vercel)
+- `@revealui/mcp` - Model Context Protocol framework: server hypervisor, tool discovery, adapters (Stripe, Vercel)
 - `@revealui/openapi` - Type-safe OpenAPI 3.x for Hono (route defs, Zod middleware, spec generation)
 - `@revealui/paywall` - Runtime license enforcement, feature gating, upgrade UI
 - `@revealui/presentation` - Native React UI components on Tailwind v4
