@@ -161,6 +161,12 @@ node packages/harnesses/dist/cli.js content export --output ~/revfleet/revcon/ha
 
 Pro definitions are visible in the repo but the CLI validates a license key before installing them.
 
+## Branch protection
+
+`main` and `test` are protected: changes land via PR, and commits must be
+signed (a verified signature is required on protected branches). Configure
+commit signing locally before pushing.
+
 ## License
 
 MIT
