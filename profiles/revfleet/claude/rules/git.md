@@ -25,4 +25,5 @@
 - One PR can close multiple issues: `Closes #1, Closes #2`
 
 ## Identity
-- Professional repos (RevealUIStudio): RevealUI Studio <founder@revealui.com>
+- Professional repos (RevealUIStudio): RevealUI Studio <43050008+joshua-v-dev@users.noreply.github.com>
+- Amended 2026-07-10: never "restore" founder@revealui.com. It belongs to the org account, so SSH-signed commits carrying it render Unverified and required-signatures rulesets silently block the merge. Full rationale in the fleet-level `~/.claude/rules/git.md`.
