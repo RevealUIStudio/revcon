@@ -24,6 +24,9 @@ target repos.
 
 # List available profiles
 ./link.sh --list
+
+# Full flag reference for any script
+./link.sh --help
 ```
 
 ## Structure
@@ -67,7 +70,12 @@ revcon/
 
 1. **`link.sh`** creates real directories (`.zed/`, `.cursor/`) in the target project
 2. Individual config files are symlinked from `base/` into those directories
-3. Profile files overlay on top — same filename in a profile overrides the base version
+3. `--profile` is repeatable. Profiles overlay on top of `base/` in the order
+   given, and later profiles override earlier ones on filename collisions
+   (`base` → first `--profile` → second `--profile` → ...):
+   ```bash
+   ./link.sh --target ~/revfleet/revealui --profile revfleet --profile revealui
+   ```
 4. Editor-written state (cache, chat history) stays in the real directory, not here
 5. `.gitignore` is updated so symlinked dirs are never committed
 
@@ -127,7 +135,13 @@ private dir as well, and `status.sh` reports them as `private:<rel-path>` source
 | Zed | `.zed/` | Full support |
 | VS Code | `.vscode/` | Placeholder |
 
-Besides `cursor`, `zed`, `vscode`, and `all`, `--editor` also accepts `claude` and `agents` to link the generated AI harness content: `claude` writes the full `.claude/` tree (rules, commands, agents, skills) and `agents` links agent profiles only. See [Harnesses Content](#harnesses-content).
+Besides `cursor`, `zed`, `vscode`, and `all`, `--editor` also accepts `claude`
+and `agents`. These link content from `base/<editor>/` and
+`profiles/<profile>/<editor>/`, same as every other editor. `claude` writes
+`.claude/` from `profiles/<profile>/claude/{agents,rules,skills}`; `agents`
+writes `.agents/` from `profiles/<profile>/agents/`. Neither one links
+`harnesses/*`. That content ships separately via the `revealui-harnesses`
+CLI. See [Harnesses Content](#harnesses-content).
 
 ## Harnesses Content
 
