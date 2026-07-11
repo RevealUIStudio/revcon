@@ -46,7 +46,7 @@ Run `npx biome check --write <file>` on each file you edit before moving on.
 1. Run `pnpm gate:quick` and confirm no new errors
 2. Review `git diff` for unintended changes
 3. Ensure conventional commit format: `type(scope): description`
-4. Git identity: RevealUI Studio <founder@revealui.com>
+4. Git identity: RevealUI Studio <43050008+joshua-v-dev@users.noreply.github.com>
 
 ## Known Limitation
 
