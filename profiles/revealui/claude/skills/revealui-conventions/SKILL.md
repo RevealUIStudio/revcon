@@ -39,7 +39,7 @@ Follow these conventions for ALL code in the RevealUI monorepo.
 - Chore: `chore/<short-description>`
 
 ### Identity
-- RevealUI Studio <founder@revealui.com>
+- RevealUI Studio <43050008+joshua-v-dev@users.noreply.github.com>
 
 ## Monorepo
 
