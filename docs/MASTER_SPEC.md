@@ -9,7 +9,7 @@ staleness-status: FRESH
 # RevCon — Master Spec
 
 **Last Updated:** 2026-05-10
-**Status:** Pre-1.0 — surface stable for studio internal use; one profile (`revealui`)
+**Status:** Pre-1.0 — surface stable for studio internal use; two profiles shipped (`revealui`, `revfleet`)
 **Repo:** [RevealUIStudio/revcon](https://github.com/RevealUIStudio/revcon)
 
 > Surface area + symlink contract. Companion to [`MASTER_PLAN.md`](./MASTER_PLAN.md) (status + roadmap).
@@ -38,11 +38,13 @@ revcon/
 │   └── zed/
 │       └── settings.json
 ├── profiles/              # per-project overlays (layered on base)
-│   └── revealui/
-│       ├── agents/        # Claude Code agent definitions
-│       ├── claude/        # Claude rules + skills
-│       ├── cursor/        # cursor rules
-│       └── zed/           # zed-specific overrides
+│   ├── revealui/
+│   │   ├── agents/        # Claude Code agent definitions
+│   │   ├── claude/        # Claude rules + skills
+│   │   ├── cursor/        # cursor rules
+│   │   └── zed/           # zed-specific overrides
+│   └── revfleet/
+│       └── claude/rules/  # shared fleet-wide rules
 └── harnesses/             # full Claude Code harness shipped to targets
     ├── agents/
     ├── commands/
@@ -61,10 +63,12 @@ revcon/
 | Flag | Default | Purpose |
 |---|---|---|
 | `--target <path>` | (required) | Target project directory (where symlinks land) |
-| `--profile <name>` | (none — base only) | Profile to overlay on base; `revealui` is the only profile shipped today |
-| `--editor <zed\|cursor>` | (all) | Limit to a single editor's configs |
+| `--profile <name>` | (none — base only) | Profile to overlay on base; repeatable. `profiles/` ships `revealui` and `revfleet` today; later `--profile` wins on filename collision |
+| `--editor <name>` | (all) | Limit to one editor: `cursor`, `zed`, `vscode`, `claude`, `agents` |
+| `--skip <name>` | (none) | Skip an editor (repeatable; also settable via `REVCON_SKIP_EDITORS`) |
 | `--dry-run` | off | Preview without writing |
 | `--list` | (mode) | Enumerate available profiles, exit |
+| `-h`, `--help` | (mode) | Show usage, exit |
 
 Behavior:
 
@@ -80,9 +84,12 @@ Behavior:
 | Flag | Purpose |
 |---|---|
 | `--target <path>` | Target project directory |
+| `--editor <name>` | Limit to one editor: `cursor`, `zed`, `vscode`, `claude`, `agents` |
+| `--skip <name>` | Skip an editor (repeatable; also settable via `REVCON_SKIP_EDITORS`) |
 | `--dry-run` | Preview without removing |
+| `-h`, `--help` | Show usage, exit |
 
-Removes only files that are symlinks pointing into the revcon repo. Real files at target paths are left untouched.
+Removes only files that are symlinks pointing into the revcon repo (or into `REVCON_PRIVATE_PROFILES_DIR` when set). Real files at target paths are left untouched.
 
 ### `status.sh`
 
@@ -102,12 +109,15 @@ For target `~/revfleet/revealui` with `--profile revealui`:
 ~/revfleet/revealui/.cursor/rules/...   → revcon/profiles/revealui/cursor/rules/...
 ~/revfleet/revealui/.zed/settings.json  → revcon/base/zed/settings.json
 ~/revfleet/revealui/.zed/...override... → revcon/profiles/revealui/zed/...
+~/revfleet/revealui/.claude/agents/...  → revcon/profiles/revealui/claude/agents/...
 ~/revfleet/revealui/.claude/rules/...   → revcon/profiles/revealui/claude/rules/...
-~/revfleet/revealui/.claude/agents/...  → revcon/profiles/revealui/agents/...
-~/revfleet/revealui/.claude/commands/...→ revcon/harnesses/commands/...
-~/revfleet/revealui/.claude/skills/...  → revcon/harnesses/skills/...
-~/revfleet/revealui/.claude/manifest.json → revcon/harnesses/manifest.json
+~/revfleet/revealui/.claude/skills/...  → revcon/profiles/revealui/claude/skills/...
 ```
+
+This is produced by `--editor claude` (mapped to `.claude/` via `link.sh`'s
+`EDITOR_DIRS`). `--editor agents` symlinks `.agents/` from
+`profiles/<profile>/agents/` the same way. Neither editor touches
+`harnesses/*`; see "Behavior" above.
 
 Profile overrides win over base (when both define the same target path).
 
