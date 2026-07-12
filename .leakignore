@@ -32,3 +32,10 @@ profiles/revealui/claude/skills/revealui-safety/SKILL.md                    lts-
 # issue bodies. This is the config that enforces the rule, not a leak of
 # it (mirrors the ci.yml anti-regression entries).
 .gitleaks.issues.toml                   lit-username,abs-home-path,private-jv-repo,private-jv-name
+
+# By-design: the fleet git rule mirrored into profiles/revfleet must carry the
+# canonical noreply commit identity literally, so it re-propagates to the
+# maintainer's own rules unchanged. That address is public by construction. It
+# appears on every commit pushed to every public repo, so it is not a leak.
+# Consumer-facing profiles under profiles/revealui/ use a placeholder instead.
+profiles/revfleet/claude/rules/git.md   lit-username
