@@ -2,7 +2,7 @@
 # status.sh — Report which editor-config profiles are linked where.
 #
 # Usage:
-#   ./status.sh                                        # scan ~/revfleet/*/ + ~/projects/*/
+#   ./status.sh                                        # scan ~/revfleet/*/
 #   ./status.sh --target ~/revfleet/revealui           # check one target
 #   ./status.sh --editor zed                           # filter to zed only
 #   ./status.sh --json                                 # machine-readable output
@@ -22,7 +22,7 @@ usage() {
 Usage: status.sh [OPTIONS]
 
 Options:
-  --target DIR     Check a specific project directory (default: scan ~/revfleet/*/ + ~/projects/*/)
+  --target DIR     Check a specific project directory (default: scan ~/revfleet/*/)
   --editor NAME    Filter to editor: cursor, zed, vscode, claude, agents (default: all)
   --skip NAME      Skip a specific editor (repeatable, comma-separated also works)
   --json           Machine-readable JSON output
@@ -99,9 +99,9 @@ fi
 
 # --- Discovery ---
 
-# Scan ~/revfleet/*/ + ~/projects/*/ for directories with symlinks pointing back to this repo.
+# Scan ~/revfleet/*/ for directories with symlinks pointing back to this repo.
 discover_targets() {
-  for dir in "$HOME"/revfleet/*/ "$HOME"/projects/*/; do
+  for dir in "$HOME"/revfleet/*/; do
     [[ -d "$dir" ]] || continue
     local dir_real
     dir_real="$(realpath "$dir")"
