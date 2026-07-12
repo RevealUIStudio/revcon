@@ -58,5 +58,5 @@ pnpm gate:quick
 ### Git
 - [ ] Conventional commit: `type(scope): description`
 - [ ] Subject under 72 characters, imperative mood
-- [ ] Identity: RevealUI Studio <43050008+joshua-v-dev@users.noreply.github.com>
+- [ ] Identity: committer is your own GitHub noreply address (`<ID>+<username>@users.noreply.github.com`)
 - [ ] No secrets in committed files
