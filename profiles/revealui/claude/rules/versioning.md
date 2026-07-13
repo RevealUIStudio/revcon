@@ -28,9 +28,9 @@ Key settings in `.changeset/config.json`:
 
 - `updateInternalDependencies: "patch"` — cascading patch bumps only.
 - `baseBranch: "main"` — changesets compares against main.
-- `ignore` list includes all apps, Pro packages (ai, harnesses), and non-publishable packages.
+- `ignore` list is `server`, `admin`, `docs`, `marketing`, `@revealui/test`, `@revealui/scripts`, `@revealui/dev` — the four apps plus the non-publishable packages. It does NOT include the Pro packages.
 
-**Pro packages (ai, harnesses) are ignored** — they're gitignored in the public repo and versioned separately from the private repo.
+**Pro packages (ai, harnesses, mcp, services) are present and tracked in the public repo, and version through the same changesets pipeline as the OSS packages.** They are Fair Source (FSL-1.1-MIT), source-visible, converting to MIT two years after each release; `.gitignore` carries a comment header noting this but no actual ignore pattern for them. `@revealui/engines` is `"private": true` and unpublished (an npm-publish-scope choice, unrelated to gitignore or the changeset ignore list), but it still carries a normal version and CHANGELOG.
 
 ## Internal dependencies
 
