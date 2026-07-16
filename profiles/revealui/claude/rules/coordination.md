@@ -100,12 +100,14 @@ Wrap the prompt in a single fenced code block (` ``` `) the owner can triple-cli
 
 ## Master Plan Protocol
 
-1. **On session start**: Read `docs/MASTER_PLAN.md` in full. Your work must align with the current phase.
-2. **Before starting any task**: Verify the task is listed in MASTER_PLAN.md's current phase. If not listed, ask the user before proceeding.
-3. **After completing any task**: Update MASTER_PLAN.md checkboxes and add a session entry to Completed Work.
-4. **When discovering new work**: Add it to the appropriate phase in MASTER_PLAN.md, do not create separate plan files.
-5. **When multiple agents are active**: Each agent must re-read MASTER_PLAN.md before starting new work to see if another agent has updated it.
-6. **When updating MASTER_PLAN.md**: Also update the Plan Reference section in `.claude/workboard.md` with the current timestamp and your agent ID.
+The master plan lives in the internal coordination hub, per ADR-005 (see the repo's `docs/INDEX.md` "Fleet coordination"). The in-repo `docs/MASTER_PLAN.md` is a retired pointer stub, not a plan; a pre-tool-use hook blocks edits to it.
+
+1. **On session start**: Read the hub master plan in full. Your work must align with the current phase.
+2. **Before starting any task**: Verify the task is listed in the hub plan's current phase. If not listed, ask the user before proceeding.
+3. **After completing any task**: Update the hub plan's checkboxes and add a session entry to Completed Work (a separate commit to the private repo, per ADR-005).
+4. **When discovering new work**: Add it to the appropriate phase in the hub plan, do not create separate plan files.
+5. **When multiple agents are active**: Each agent must re-read the hub plan before starting new work to see if another agent has updated it.
+6. **When updating the hub plan**: Also update the Plan Reference section in `.claude/workboard.md` with the current timestamp and your agent ID.
 
 ## Workboard Format
 

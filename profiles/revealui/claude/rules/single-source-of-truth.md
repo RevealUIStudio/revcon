@@ -5,9 +5,11 @@
 All agent coordination, planning, and status tracking flows through ONE location per repo:
 
 ```
-.claude/workboard.md   — agent coordination
-docs/MASTER_PLAN.md    — planning & task tracking
+.claude/workboard.md          — agent coordination
+internal coordination hub     — planning & task tracking (master plan)
 ```
+
+The in-repo `docs/MASTER_PLAN.md` is a retired pointer stub (see the repo's `docs/INDEX.md` "Fleet coordination" for the hub reference).
 
 **There are no exceptions.** Every agent, subagent, worktree agent, and background task
 reads from and writes to this hub — regardless of which working tree they were launched from.
@@ -17,16 +19,16 @@ reads from and writes to this hub — regardless of which working tree they were
 | Artifact | Canonical Location | Notes |
 |----------|-------------------|-------|
 | Workboard (agent sessions, tasks, files) | `.claude/workboard.md` | Ephemeral coordination only |
-| Master Plan (phases, tasks, status) | `docs/MASTER_PLAN.md` | Durable planning & task tracking |
+| Master Plan (phases, tasks, status) | Internal coordination hub | Durable planning & task tracking; in-repo `docs/MASTER_PLAN.md` is a retired stub |
 | Memory (persistent cross-session) | Project memory directory | Project-scoped, do not duplicate |
 | Plans (ephemeral session) | In-conversation only (EnterPlanMode) | NEVER write to a stray `plans/` directory — they rot |
 
 ## Prohibited Actions
 
 1. **Do NOT scatter agent sessions or tasks across multiple workboards** — there is one workboard per repo
-2. **Do NOT keep parallel copies of the master plan** — `docs/MASTER_PLAN.md` is the one planning document; update it in place
-3. **Do NOT create files in a stray `plans/` directory** — use in-conversation plans or MASTER_PLAN
-4. **Do NOT create planning/status files** (ACTION_PLAN.md, STATUS.md, TODO.md) anywhere — MASTER_PLAN is the only planning document
+2. **Do NOT keep parallel copies of the master plan** — the hub master plan is the one planning document; update it in place
+3. **Do NOT create files in a stray `plans/` directory** — use in-conversation plans or the hub master plan
+4. **Do NOT create planning/status files** (ACTION_PLAN.md, STATUS.md, TODO.md) anywhere — the hub master plan is the only planning document
 5. **Do NOT write memory to the wrong project context** — use the correct project memory directory
 
 ## On Session Start
