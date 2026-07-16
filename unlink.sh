@@ -109,6 +109,47 @@ unlink_editor() {
     fi
   done < <(find "$target_dir" -type l -print0 2>/dev/null)
 
+  # Copy-mode (materialized) dirs: remove manifest-listed copies whose hash
+  # still matches the manifest; keep locally-modified files and warn.
+  local manifest="$target_dir/.revcon-manifest.json"
+  if [[ -f "$manifest" ]]; then
+    if command -v jq >/dev/null 2>&1; then
+      local kept=0
+      while IFS=$'\t' read -r rel want_hash; do
+        [[ -n "$rel" ]] || continue
+        local fpath="$target_dir/$rel"
+        [[ -f "$fpath" ]] || continue
+        local have_hash
+        have_hash="$(sha256sum "$fpath" | cut -d' ' -f1)"
+        if [[ "$have_hash" == "$want_hash" ]]; then
+          if $DRY_RUN; then
+            echo "  [remove] $fpath (materialized copy)"
+          else
+            rm "$fpath"
+            echo "  [remove] $rel"
+          fi
+          ((REMOVED++)) || true
+        else
+          echo "  [keep] $rel - locally modified, not removing"
+          ((kept++)) || true
+        fi
+      done < <(jq -r '.files | to_entries[] | [.key, .value.sha256] | @tsv' "$manifest" 2>/dev/null)
+      if [[ $kept -eq 0 ]]; then
+        if $DRY_RUN; then
+          echo "  [remove] $manifest"
+        else
+          rm "$manifest"
+          echo "  [remove] .revcon-manifest.json"
+        fi
+        ((REMOVED++)) || true
+      else
+        echo "  [keep] .revcon-manifest.json - $kept modified file(s) remain"
+      fi
+    else
+      echo "  [skip] $manifest present but jq not found - cannot verify copies, leaving in place"
+    fi
+  fi
+
   # Clean up empty subdirectories (bottom-up)
   if ! $DRY_RUN; then
     find "$target_dir" -type d -empty -delete 2>/dev/null || true
