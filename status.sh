@@ -112,6 +112,11 @@ discover_targets() {
       local dot_dir="${EDITOR_DIRS[$e]}"
       local check_dir="$dir$dot_dir"
       if [[ -d "$check_dir" ]]; then
+        # Materialized (copy-mode) targets carry a manifest, no symlinks
+        if [[ -f "$check_dir/.revcon-manifest.json" ]]; then
+          echo "$dir_real"
+          break
+        fi
         local found=false
         while IFS= read -r -d '' link; do
           local dest
@@ -222,6 +227,77 @@ process_target() {
           json_editors="$json_editors,$ej"
         else
           json_editors="$ej"
+        fi
+      fi
+      continue
+    fi
+
+    # Copy-mode (materialized) dirs carry a manifest instead of symlinks:
+    # verify each copy against the manifest hash (local edits) AND against the
+    # current profile source (stale copies).
+    local manifest="$target_dir/.revcon-manifest.json"
+    if [[ -f "$manifest" ]]; then
+      if command -v jq >/dev/null 2>&1; then
+        local m_total=0 m_ok=0 m_bad=0
+        local m_profiles=""
+        m_profiles="$(jq -r '.profiles | join(", ")' "$manifest" 2>/dev/null || true)"
+        while IFS=$'\t' read -r rel src_rel want_hash; do
+          [[ -n "$rel" ]] || continue
+          ((m_total++)) || true
+          local fpath="$target_dir/$rel"
+          local state="ok"
+          if [[ ! -f "$fpath" ]]; then
+            state="missing"
+          else
+            local have_hash
+            have_hash="$(sha256sum "$fpath" | cut -d' ' -f1)"
+            if [[ "$have_hash" != "$want_hash" ]]; then
+              state="modified"
+            else
+              local src_abs
+              if [[ "$src_rel" == private:* ]]; then
+                src_abs="$PRIVATE_PROFILES_DIR/${src_rel#private:}"
+              else
+                src_abs="$SCRIPT_DIR/$src_rel"
+              fi
+              if [[ ! -f "$src_abs" ]]; then
+                state="orphaned"
+              else
+                local src_hash
+                src_hash="$(sha256sum "$src_abs" | cut -d' ' -f1)"
+                [[ "$src_hash" == "$want_hash" ]] || state="stale"
+              fi
+            fi
+          fi
+          if [[ "$state" == "ok" ]]; then
+            ((m_ok++)) || true
+            $JSON || files_human+=$'    \xe2\x9c\x93 '"$rel"$'\n'
+          else
+            ((m_bad++)) || true
+            $JSON || files_human+=$'    \xe2\x9c\x97 '"$rel"$' ('"$state"$')\n'
+          fi
+          if $JSON; then
+            local fe
+            fe=$(printf '{"name":"%s","source":"%s","state":"%s"}' "$rel" "$src_rel" "$state")
+            if [[ -n "$files_json" ]]; then files_json="$files_json,$fe"; else files_json="$fe"; fi
+          fi
+        done < <(jq -r '.files | to_entries[] | [.key, .value.source, .value.sha256] | @tsv' "$manifest" 2>/dev/null)
+        if ! $JSON; then
+          echo "  [$e] $m_total materialized, $m_ok ok, $m_bad drifted (mode: copy, profiles: $m_profiles)"
+          printf '%b' "$files_human"
+        else
+          local ej
+          ej=$(printf '"%s":{"mode":"copy","materialized":%d,"ok":%d,"drifted":%d,"profiles":"%s","files":[%s]}' \
+            "$e" "$m_total" "$m_ok" "$m_bad" "$m_profiles" "$files_json")
+          if [[ -n "$json_editors" ]]; then json_editors="$json_editors,$ej"; else json_editors="$ej"; fi
+        fi
+      else
+        if ! $JSON; then
+          echo "  [$e] materialized (mode: copy) - jq not found, cannot verify"
+        else
+          local ej
+          ej=$(printf '"%s":{"mode":"copy","materialized":null,"error":"jq not found"}' "$e")
+          if [[ -n "$json_editors" ]]; then json_editors="$json_editors,$ej"; else json_editors="$ej"; fi
         fi
       fi
       continue
