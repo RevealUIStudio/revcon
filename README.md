@@ -79,6 +79,27 @@ revcon/
 4. Editor-written state (cache, chat history) stays in the real directory, not here
 5. `.gitignore` is updated so symlinked dirs are never committed
 
+## Copy Mode (materialized, git-tracked)
+
+Symlinks are untracked, so fresh clones, CI runners, and git worktrees of a
+target repo see none of the distributed config. For repos that need the config
+to travel with the repo, use copy mode:
+
+```bash
+./link.sh --target ~/revfleet/revealui --profile revfleet --profile revealui --editor claude --mode copy
+```
+
+Copy mode materializes real files instead of symlinks, writes a deterministic
+`<dot_dir>/.revcon-manifest.json` (per-file profile source + sha256), and does
+NOT add a `.gitignore` entry: the target repo tracks the copies and gates
+drift with a lockstep check against the manifest (revealui:
+`pnpm validate:rules-lockstep`). Re-running with unchanged profiles is a
+no-op. Edits belong in the profile, never in the copy; re-apply to converge.
+
+`status.sh` verifies materialized dirs against both the manifest (local edits)
+and the current profile sources (stale copies). `unlink.sh` removes copies
+whose hash still matches the manifest and keeps locally modified files.
+
 ## Adding a Profile
 
 ```bash

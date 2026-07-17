@@ -2,9 +2,10 @@
 
 ## Per-repo planning
 
-This repo's `docs/MASTER_PLAN.md` is a **scoped snapshot** — it covers only this
-repo and defers to the fleet master on any cross-cutting question. It is not the
-single source of truth for the fleet.
+Where a repo still carries a `docs/MASTER_PLAN.md`, it is a **retired pointer
+stub**, not a plan (the public-snapshot model was retired 2026-07-16; a
+pre-tool-use hook blocks edits to rogue plan copies). Planning is not tracked
+in public repos.
 
 Fleet-level cross-cutting plans, lane state, and roadmap tracking live in the
 internal coordination hub (the agent dev environment), not in a public repo (see
