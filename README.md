@@ -202,6 +202,11 @@ Pro definitions are visible in the repo but the CLI validates a license key befo
 signed (a verified signature is required on protected branches). Configure
 commit signing locally before pushing.
 
+## Version
+
+This repo has no `package.json`, so its version is tracked in the root
+`VERSION` file. Current: `0.1.0`.
+
 ## License
 
 MIT
