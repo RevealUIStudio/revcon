@@ -1,14 +1,14 @@
 ---
 type: master-spec
 repo: revcon
-last-updated: 2026-05-10
+last-updated: 2026-07-23
 owner: RevealUI Studio
 staleness-status: FRESH
 ---
 
 # RevCon — Master Spec
 
-**Last Updated:** 2026-05-10
+**Last Updated:** 2026-07-23
 **Status:** Pre-1.0 — surface stable for studio internal use; two profiles shipped (`revealui`, `revfleet`)
 **Repo:** [RevealUIStudio/revcon](https://github.com/RevealUIStudio/revcon)
 
