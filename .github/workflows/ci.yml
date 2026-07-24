@@ -130,6 +130,18 @@ jobs:
       - name: Scan for private paths and credentials
         run: bash scripts/check-no-private-leaks.sh
 
+  # GAP-358: accidental skill multi-copy lockstep (claude canonical → agents + generator)
+  skill-lockstep:
+    name: Skill multi-copy lockstep
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Fail if agents/generator skill copies drift from claude
+        run: bash scripts/check-skill-lockstep.sh
+
   validate-frontmatter:
     name: Markdown YAML frontmatter validity
     runs-on: ubuntu-latest

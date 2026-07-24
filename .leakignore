@@ -39,3 +39,10 @@ profiles/revealui/claude/skills/revealui-safety/SKILL.md                    lts-
 # appears on every commit pushed to every public repo, so it is not a leak.
 # Consumer-facing profiles under profiles/revealui/ use a placeholder instead.
 profiles/revfleet/claude/rules/git.md   lit-username
+
+# By-design: ban-instruction only — "never restore founder@revealui.com".
+# Not a consumer commit identity. Any other path hitting retired-org-email fails.
+profiles/revfleet/claude/rules/git.md   retired-org-email
+
+# By-design: this allowlist documents the banned address in a comment.
+.leakignore                             retired-org-email
