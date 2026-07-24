@@ -34,7 +34,7 @@ Default order:
 
 Do not raise global Vitest timeouts just to get green runs.
 
-### 2. Treat "Passes Alone, Fails Under Turbo" as Concurrency Pressure First
+### 2. Treat “Passes Alone, Fails Under Turbo” as Concurrency Pressure First
 
 If a package passes in isolation but flakes during `turbo run test`, assume resource pressure before assuming product logic broke.
 
@@ -48,7 +48,7 @@ This repo already needed that pattern in packages like `packages/test` and `pack
 
 ### 3. Package-Level Vitest Caps Are Acceptable Here
 
-If a package repeatedly flakes only under monorepo fan-out, it is acceptable to cap that package's internal Vitest concurrency.
+If a package repeatedly flakes only under monorepo fan-out, it is acceptable to cap that package’s internal Vitest concurrency.
 
 Typical pattern:
 
@@ -67,7 +67,7 @@ Use this for:
 
 Do not apply it repo-wide by default.
 
-### 4. Fix `act(...)` Warnings, Don't Ignore Them
+### 4. Fix `act(...)` Warnings, Don’t Ignore Them
 
 Common fixes in this repo:
 
@@ -151,8 +151,8 @@ Do not keep stacking unrelated fixes without re-verifying the exact failing lane
 
 ## What Not To Do
 
-- don't inflate all test timeouts
-- don't disable assertions just to remove flakes
-- don't mix Pro-only tests back into OSS-default suites
-- don't silence `act(...)` or listener warnings when the underlying fix is small
-- don't assume a package is stable because it passed alone once
+- don’t inflate all test timeouts
+- don’t disable assertions just to remove flakes
+- don’t mix Pro-only tests back into OSS-default suites
+- don’t silence `act(...)` or listener warnings when the underlying fix is small
+- don’t assume a package is stable because it passed alone once

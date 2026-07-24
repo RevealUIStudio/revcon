@@ -54,6 +54,10 @@ PATTERNS=(
   "license-key|RVUI-[a-z]+-[a-f0-9]{16,}|RevealUI license key (looks like a real issued key)"
   "vercel-org-id|team_[A-Za-z0-9]{16,}|Vercel org/team identifier"
   "vercel-project-id|prj_[A-Za-z0-9]{16,}|Vercel project identifier"
+  # GAP-358: retired org email must never be shipped as a *committer* identity.
+  # Allowlist only ban-instruction files (e.g. "never restore founder@…") via
+  # .leakignore — consumer profiles must not instruct users to commit as it.
+  "retired-org-email|founder@revealui\\.com|retired org email (founder@revealui.com); never ship as git identity for consumers"
 )
 
 # Directories / file globs to exclude from the scan.
