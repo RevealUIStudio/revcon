@@ -18,7 +18,6 @@ When the Skill tool is available, proactively invoke the following skills in the
 ## Only invoke on explicit user request (disable-model-invocation: true)
 
 - `/gate` — user must explicitly ask to run the gate
-- `/sync-lts` — user must explicitly ask to sync or backup
 - `/new-package` — user must explicitly ask to scaffold a package
 - `/new-professional-project` — user must explicitly ask to create a project
 - `/vercel-deploy` — user must explicitly ask to deploy
