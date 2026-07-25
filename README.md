@@ -58,13 +58,33 @@ revcon/
 │   │   └── pro/                   #   Commercial — require license
 │   ├── commands/
 │   ├── agents/
-│   ├── skills/
+│   ├── skills/                    # INTENTIONAL tier bodies (oss/pro); not SKILL.md
 │   └── generators/                # Pre-rendered, ready to copy
 │       ├── claude-code/           #   → .claude/
 │       └── cursor/                #   → .cursor/rules/
 ├── link.sh                        # Create symlinks + gitignore
 └── unlink.sh                      # Remove symlinks
 ```
+
+## Skill multi-copy (GAP-358)
+
+Shared RevealUI skills ship on three surfaces that must stay **byte-identical**:
+
+| Role | Path |
+|------|------|
+| **Canonical (edit here)** | `profiles/revealui/claude/skills/<name>/SKILL.md` |
+| Lockstep copy | `profiles/revealui/agents/skills/<name>/SKILL.md` |
+| Lockstep copy | `harnesses/generators/claude-code/.claude/skills/<name>/SKILL.md` |
+
+```bash
+# After editing a shared skill under profiles/revealui/claude/skills/:
+bash scripts/sync-skill-copies.sh
+bash scripts/check-skill-lockstep.sh   # also a CI job: "Skill multi-copy lockstep"
+```
+
+`harnesses/skills/oss|pro/*.md` are a **different** intentional shape (harness
+package bodies without profile frontmatter). They are not lockstepped against
+profile `SKILL.md` files.
 
 ## How It Works
 
