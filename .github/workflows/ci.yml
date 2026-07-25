@@ -142,6 +142,18 @@ jobs:
       - name: Fail if agents/generator skill copies drift from claude
         run: bash scripts/check-skill-lockstep.sh
 
+  # GAP-419: rule file lockstep (profiles canonical → harnesses/rules copies)
+  rules-lockstep:
+    name: Rule multi-copy lockstep
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Fail if harnesses/rules copies drift from profiles canonical
+        run: bash scripts/check-rules-lockstep.sh
+
   validate-frontmatter:
     name: Markdown YAML frontmatter validity
     runs-on: ubuntu-latest
