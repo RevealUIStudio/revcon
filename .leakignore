@@ -46,3 +46,9 @@ profiles/revfleet/claude/rules/git.md   retired-org-email
 
 # By-design: this allowlist documents the banned address in a comment.
 .leakignore                             retired-org-email
+
+# By-design: copy-mode materialization of profiles/revfleet/claude/rules/git.md
+# (GAP-372). Same ban-instruction ("never restore founder@…") as the profile
+# source allowlist above — not a consumer commit identity. Do not broaden to
+# other .claude/rules paths.
+.claude/rules/git.md                    retired-org-email
