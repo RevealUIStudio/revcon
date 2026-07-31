@@ -7,6 +7,7 @@
 #   ./status.sh --editor zed                           # filter to zed only
 #   ./status.sh --json                                 # machine-readable output
 #   ./status.sh --target ~/revfleet/revealui --json    # combined
+#   ./status.sh --target DIR --editor claude --verify  # exit 1 on copy-mode drift (GAP-372)
 
 set -euo pipefail
 
@@ -14,8 +15,11 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 TARGET=""
 EDITOR="all"
 JSON=false
+VERIFY=false
 SKIP_EDITORS="${REVCON_SKIP_EDITORS:-}"
 PRIVATE_PROFILES_DIR="${REVCON_PRIVATE_PROFILES_DIR:-}"
+# Accumulator for --verify (copy-mode drifted/missing counts across targets)
+VERIFY_BAD=0
 
 usage() {
   cat <<'EOF'
@@ -26,6 +30,10 @@ Options:
   --editor NAME    Filter to editor: cursor, zed, vscode, claude, agents (default: all)
   --skip NAME      Skip a specific editor (repeatable, comma-separated also works)
   --json           Machine-readable JSON output
+  --verify         Exit 1 if any copy-mode materialization has drift (GAP-372).
+                   Prefer scripts/verify-copy-lockstep.sh in consumer CI (self-
+                   consistency, no profile checkout). This flag also flags
+                   profile-source staleness when this revcon tree is present.
   -h, --help       Show this help
 
 Environment variables:
@@ -37,6 +45,7 @@ Examples:
   ./status.sh --target ~/revfleet/revealui
   ./status.sh --editor zed --json
   ./status.sh --target ~/revfleet/revealui --editor cursor --json
+  ./status.sh --target ~/revfleet/revdev --editor claude --verify
 EOF
   exit 0
 }
@@ -47,6 +56,7 @@ while [[ $# -gt 0 ]]; do
     --editor) EDITOR="$2";  shift 2 ;;
     --skip)   SKIP_EDITORS="${SKIP_EDITORS:+$SKIP_EDITORS,}$2"; shift 2 ;;
     --json)   JSON=true;    shift ;;
+    --verify) VERIFY=true;  shift ;;
     -h|--help) usage ;;
     *) echo "Unknown option: $1"; usage ;;
   esac
@@ -291,6 +301,9 @@ process_target() {
             "$e" "$m_total" "$m_ok" "$m_bad" "$m_profiles" "$files_json")
           if [[ -n "$json_editors" ]]; then json_editors="$json_editors,$ej"; else json_editors="$ej"; fi
         fi
+        if $VERIFY && (( m_bad > 0 )); then
+          VERIFY_BAD=$((VERIFY_BAD + m_bad))
+        fi
       else
         if ! $JSON; then
           echo "  [$e] materialized (mode: copy) - jq not found, cannot verify"
@@ -298,6 +311,9 @@ process_target() {
           local ej
           ej=$(printf '"%s":{"mode":"copy","materialized":null,"error":"jq not found"}' "$e")
           if [[ -n "$json_editors" ]]; then json_editors="$json_editors,$ej"; else json_editors="$ej"; fi
+        fi
+        if $VERIFY; then
+          VERIFY_BAD=$((VERIFY_BAD + 1))
         fi
       fi
       continue
@@ -424,4 +440,14 @@ if $JSON; then
     fi
   done
   printf '{"targets":[%s]}\n' "$joined"
+fi
+
+if $VERIFY; then
+  if (( VERIFY_BAD > 0 )); then
+    echo "verify: FAIL — $VERIFY_BAD copy-mode drift(s) (or unreadable manifest)" >&2
+    exit 1
+  fi
+  if ! $JSON; then
+    echo "verify: OK — no copy-mode drift reported"
+  fi
 fi
