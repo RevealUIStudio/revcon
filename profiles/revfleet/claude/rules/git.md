@@ -29,6 +29,19 @@ Owner-action one-liners in wrap-ups must use this form (see disposition-actions)
 - `main` only ever receives changes via a promotion PR whose head is `test` (enforced by `promotion-gate.yml`). Never push directly to `main` or `test`, and never open a feature PR directly against `main`.
 - Merge manually after review — no auto-merge.
 
+### Promotion playbook (test → main)
+
+Call this **promote**, never hop.
+
+1. Do not open a feature PR against `main`. Feature PRs land on `test` first.
+2. Confirm `origin/main` is an ancestor of `origin/test` (`git merge-base --is-ancestor origin/main origin/test`). If not, land the auto-backflow PR (main → test) first so `promotion-gate` can pass.
+3. Open a promotion PR whose **head is `test`** and **base is `main`**. Wait for `promotion-gate` and every other required check to go green. Do not merge while a required check is pending or red.
+4. Merge with a **merge-commit only**: `gh pr merge <n> -R owner/repo --merge --delete-branch`. Never squash, never rebase-merge, never `--admin`, never `--auto`, never `--no-verify`.
+5. Extra-approval: when the repo ruleset requires an approving review from the extra-approval account, do not self-merge the promotion without that review. Resolve the account from the ruleset / fleet hardline; do not paste a personal login into this file.
+6. After the promote lands, confirm auto-backflow (main → test) so `test` cannot drift. If a promote was squashed, parentage is broken: repair with a signed `--no-ff` merge of `origin/main` into `test` via a backflow PR, then re-promote. Do not force-push `test` or `main`.
+
+Opening or merging a promotion PR is owner-gated unless the owner named an in-session merge-when-green for that PR.
+
 ### HARDLINE: never branch off a feature branch (owner 2026-07-21)
 
 Always cut new branches from **`origin/test`** (or `origin/main` when the
