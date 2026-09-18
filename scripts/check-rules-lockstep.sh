@@ -36,7 +36,7 @@
 # (a different, cross-repo comparison that CANNOT be run in CI here — the
 # canonical source lives outside this repo): from a fleet dev machine, run
 #   diff <(ls ~/.claude/rules/*.md | xargs -n1 basename) \
-#        <(ls ~/revfleet/revcon/profiles/{revealui,revfleet}/claude/rules/*.md 2>/dev/null | xargs -n1 basename | sort -u)
+#        <(ls ~/revealfleet/revcon/profiles/{revealui,revfleet}/claude/rules/*.md 2>/dev/null | xargs -n1 basename | sort -u)
 # The durable home for that cross-repo check is the control-layer content
 # pipeline (GAP-421's content-materialization channel), not a second
 # hand-rolled sync script here.

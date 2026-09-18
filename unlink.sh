@@ -2,8 +2,8 @@
 # unlink.sh — Remove symlinked editor configs from a target project.
 #
 # Usage:
-#   ./unlink.sh --target ~/revfleet/revealui
-#   ./unlink.sh --target ~/revfleet/revealui --editor zed
+#   ./unlink.sh --target ~/revealfleet/revealui
+#   ./unlink.sh --target ~/revealfleet/revealui --editor zed
 #
 # Removes only symlinks that point back into this editor-configs repo.
 # Real files (local overrides, editor state) are left untouched.
