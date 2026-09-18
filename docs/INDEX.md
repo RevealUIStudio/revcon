@@ -6,7 +6,7 @@ updated: 2026-07-23
 
 # RevCon — Documentation Index
 
-Editor + agent-rule sync via symlinks. Two profiles shipped (`revealui`, `revfleet`); per-product profile composition.
+Editor + agent-rule sync via symlinks. Two profiles shipped (`revealui`, `revealfleet`); per-product profile composition.
 
 ## This repo's masters
 
