@@ -3,7 +3,7 @@
 #
 # Plain bash, no bats or other new dependencies. Every scenario runs against
 # a mktemp-based fake HOME and mktemp-based fake target/repo directories, so
-# the real ~/.config, the real ~/revfleet fleet repos, and this checkout's
+# the real ~/.config, the real ~/revealfleet fleet repos, and this checkout's
 # own base/ and profiles/ trees are never touched. Each scenario runs the
 # scripts against a small fixture "revcon repo" (a copy of link.sh/unlink.sh/
 # status.sh plus deterministic base/ and profiles/testprofile/ fixtures) that
@@ -247,10 +247,10 @@ test_status_in_sync_and_drifted() {
 }
 
 test_status_default_scan_sandboxed_to_fake_home() {
-  local name="status.sh default scan (no --target) stays inside the fake HOME/revfleet"
+  local name="status.sh default scan (no --target) stays inside the fake HOME/revealfleet"
   setup_fixture_repo
-  mkdir -p "$FAKE_HOME/revfleet"
-  local target="$FAKE_HOME/revfleet/demo-project"
+  mkdir -p "$FAKE_HOME/revealfleet"
+  local target="$FAKE_HOME/revealfleet/demo-project"
   mkdir -p "$target"
   run_script link.sh --target "$target" --profile testprofile --editor zed >/dev/null 2>&1
 
