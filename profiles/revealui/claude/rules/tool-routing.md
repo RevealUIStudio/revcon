@@ -10,7 +10,7 @@ A single Windows-host Claude Code instance can span both contexts:
 
 | Surface | Example path | Filesystem | Role |
 |---------|--------------|------------|------|
-| RevealUI (authoritative) | `\\wsl$\<distro>\...\revfleet\revealui\` (UNC) | WSL ext4 | Read + coordination from the Windows host |
+| RevealUI (authoritative) | `\\wsl$\<distro>\...\revealfleet\revealui\` (UNC) | WSL ext4 | Read + coordination from the Windows host |
 | Personal / Windows-native projects | e.g. `E:\projects\<repo>` | NTFS | Full native read/write |
 
 The older "one Windows instance for personal work, a separate WSL instance for RevealUI" split is obsolete. A single Windows-host instance now spans both, spinning up a WSL-native session for the write/build work below.

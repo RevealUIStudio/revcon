@@ -15,4 +15,4 @@ Editor + agent-rule sync via symlinks. Two profiles shipped (`revealui`, `reveal
 
 ## Fleet coordination
 
-Part of [RevFleet](https://github.com/RevealUIStudio). Cross-fleet coordination, planning, and lane tracking live in the agent dev environment — not in this public repo.
+Part of [RevealFleet](https://github.com/RevealUIStudio). Cross-fleet coordination, planning, and lane tracking live in the agent dev environment — not in this public repo.
