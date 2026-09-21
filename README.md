@@ -94,7 +94,7 @@ profile `SKILL.md` files.
    given, and later profiles override earlier ones on filename collisions
    (`base` → first `--profile` → second `--profile` → ...):
    ```bash
-   ./link.sh --target ~/revealfleet/revealui --profile revfleet --profile revealui
+   ./link.sh --target ~/revealfleet/revealui --profile revealfleet --profile revealui
    ```
 4. Editor-written state (cache, chat history) stays in the real directory, not here
 5. `.gitignore` is updated so symlinked dirs are never committed
@@ -106,7 +106,7 @@ target repo see none of the distributed config. For repos that need the config
 to travel with the repo, use copy mode:
 
 ```bash
-./link.sh --target ~/revealfleet/revealui --profile revfleet --profile revealui --editor claude --mode copy
+./link.sh --target ~/revealfleet/revealui --profile revealfleet --profile revealui --editor claude --mode copy
 ```
 
 Copy mode materializes real files instead of symlinks, writes a deterministic
