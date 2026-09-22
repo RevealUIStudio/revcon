@@ -8,19 +8,19 @@ target repos.
 
 ```bash
 # Link into a project with a profile
-./link.sh --target ~/revfleet/revealui --profile revealui
+./link.sh --target ~/revealfleet/revealui --profile revealui
 
 # Link base configs only (no profile)
-./link.sh --target ~/revfleet/revforge
+./link.sh --target ~/revealfleet/revforge
 
 # Link a single editor
-./link.sh --target ~/revfleet/revealui --profile revealui --editor zed
+./link.sh --target ~/revealfleet/revealui --profile revealui --editor zed
 
 # Preview without changes
-./link.sh --dry-run --target ~/revfleet/revealui --profile revealui
+./link.sh --dry-run --target ~/revealfleet/revealui --profile revealui
 
 # Remove symlinks
-./unlink.sh --target ~/revfleet/revealui
+./unlink.sh --target ~/revealfleet/revealui
 
 # List available profiles
 ./link.sh --list
@@ -94,7 +94,7 @@ profile `SKILL.md` files.
    given, and later profiles override earlier ones on filename collisions
    (`base` → first `--profile` → second `--profile` → ...):
    ```bash
-   ./link.sh --target ~/revfleet/revealui --profile revfleet --profile revealui
+   ./link.sh --target ~/revealfleet/revealui --profile revealfleet --profile revealui
    ```
 4. Editor-written state (cache, chat history) stays in the real directory, not here
 5. `.gitignore` is updated so symlinked dirs are never committed
@@ -106,7 +106,7 @@ target repo see none of the distributed config. For repos that need the config
 to travel with the repo, use copy mode:
 
 ```bash
-./link.sh --target ~/revfleet/revealui --profile revfleet --profile revealui --editor claude --mode copy
+./link.sh --target ~/revealfleet/revealui --profile revealfleet --profile revealui --editor claude --mode copy
 ```
 
 Copy mode materializes real files instead of symlinks, writes a deterministic
@@ -137,7 +137,7 @@ additive mechanisms are available — defaults are unchanged.
 
 ```bash
 # Per-invocation
-./link.sh --target ~/revfleet/foo --profile revealui --skip cursor
+./link.sh --target ~/revealfleet/foo --profile revealui --skip cursor
 
 # Default for your machine — set in ~/.bashrc / ~/.zshrc
 export REVCON_SKIP_EDITORS=cursor
@@ -160,7 +160,7 @@ mkdir -p ~/private/revcon-profiles/joshua/{zed,claude}
 # Drop your proprietary configs (rules, MCP servers, custom commands) under that tree.
 # Same layout as profiles/<name>/<editor>/.
 
-./link.sh --target ~/revfleet/foo --profile joshua
+./link.sh --target ~/revealfleet/foo --profile joshua
 # Resolves to ~/private/revcon-profiles/joshua/, NOT this repo.
 ```
 
@@ -203,8 +203,8 @@ revealui-harnesses content pull --generator claude-code --tier all
 To regenerate after updating definitions:
 
 ```bash
-cd ~/revfleet/revealui
-node packages/harnesses/dist/cli.js content export --output ~/revfleet/revcon/harnesses
+cd ~/revealfleet/revealui
+node packages/harnesses/dist/cli.js content export --output ~/revealfleet/revcon/harnesses
 ```
 
 ### OSS vs Pro

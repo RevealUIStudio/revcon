@@ -9,7 +9,7 @@ staleness-status: FRESH
 # RevCon — Master Spec
 
 **Last Updated:** 2026-07-23
-**Status:** Pre-1.0 — surface stable for studio internal use; two profiles shipped (`revealui`, `revfleet`)
+**Status:** Pre-1.0 — surface stable for studio internal use; two profiles shipped (`revealui`, `revealfleet`)
 **Repo:** [RevealUIStudio/revcon](https://github.com/RevealUIStudio/revcon)
 
 > Surface area + symlink contract. Companion to [`MASTER_PLAN.md`](./MASTER_PLAN.md) (status + roadmap).
@@ -43,7 +43,7 @@ revcon/
 │   │   ├── claude/        # Claude rules + skills
 │   │   ├── cursor/        # cursor rules
 │   │   └── zed/           # zed-specific overrides
-│   └── revfleet/
+│   └── revealfleet/
 │       └── claude/rules/  # shared fleet-wide rules
 └── harnesses/             # full Claude Code harness shipped to targets
     ├── agents/
@@ -63,7 +63,7 @@ revcon/
 | Flag | Default | Purpose |
 |---|---|---|
 | `--target <path>` | (required) | Target project directory (where symlinks land) |
-| `--profile <name>` | (none — base only) | Profile to overlay on base; repeatable. `profiles/` ships `revealui` and `revfleet` today; later `--profile` wins on filename collision |
+| `--profile <name>` | (none — base only) | Profile to overlay on base; repeatable. `profiles/` ships `revealui` and `revealfleet` today; later `--profile` wins on filename collision |
 | `--editor <name>` | (all) | Limit to one editor: `cursor`, `zed`, `vscode`, `claude`, `agents` |
 | `--skip <name>` | (none) | Skip an editor (repeatable; also settable via `REVCON_SKIP_EDITORS`) |
 | `--dry-run` | off | Preview without writing |
@@ -102,16 +102,16 @@ Reports per-target:
 
 ## Symlink layout
 
-For target `~/revfleet/revealui` with `--profile revealui`:
+For target `~/revealfleet/revealui` with `--profile revealui`:
 
 ```
-~/revfleet/revealui/.cursorignore       → revcon/base/cursor/.cursorignore
-~/revfleet/revealui/.cursor/rules/...   → revcon/profiles/revealui/cursor/rules/...
-~/revfleet/revealui/.zed/settings.json  → revcon/base/zed/settings.json
-~/revfleet/revealui/.zed/...override... → revcon/profiles/revealui/zed/...
-~/revfleet/revealui/.claude/agents/...  → revcon/profiles/revealui/claude/agents/...
-~/revfleet/revealui/.claude/rules/...   → revcon/profiles/revealui/claude/rules/...
-~/revfleet/revealui/.claude/skills/...  → revcon/profiles/revealui/claude/skills/...
+~/revealfleet/revealui/.cursorignore       → revcon/base/cursor/.cursorignore
+~/revealfleet/revealui/.cursor/rules/...   → revcon/profiles/revealui/cursor/rules/...
+~/revealfleet/revealui/.zed/settings.json  → revcon/base/zed/settings.json
+~/revealfleet/revealui/.zed/...override... → revcon/profiles/revealui/zed/...
+~/revealfleet/revealui/.claude/agents/...  → revcon/profiles/revealui/claude/agents/...
+~/revealfleet/revealui/.claude/rules/...   → revcon/profiles/revealui/claude/rules/...
+~/revealfleet/revealui/.claude/skills/...  → revcon/profiles/revealui/claude/skills/...
 ```
 
 This is produced by `--editor claude` (mapped to `.claude/` via `link.sh`'s

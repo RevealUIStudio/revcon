@@ -2,11 +2,11 @@
 # status.sh — Report which editor-config profiles are linked where.
 #
 # Usage:
-#   ./status.sh                                        # scan ~/revfleet/*/
-#   ./status.sh --target ~/revfleet/revealui           # check one target
+#   ./status.sh                                        # scan ~/revealfleet/*/
+#   ./status.sh --target ~/revealfleet/revealui           # check one target
 #   ./status.sh --editor zed                           # filter to zed only
 #   ./status.sh --json                                 # machine-readable output
-#   ./status.sh --target ~/revfleet/revealui --json    # combined
+#   ./status.sh --target ~/revealfleet/revealui --json    # combined
 #   ./status.sh --target DIR --editor claude --verify  # exit 1 on copy-mode drift (GAP-372)
 
 set -euo pipefail
@@ -26,7 +26,7 @@ usage() {
 Usage: status.sh [OPTIONS]
 
 Options:
-  --target DIR     Check a specific project directory (default: scan ~/revfleet/*/)
+  --target DIR     Check a specific project directory (default: scan ~/revealfleet/*/)
   --editor NAME    Filter to editor: cursor, zed, vscode, claude, agents (default: all)
   --skip NAME      Skip a specific editor (repeatable, comma-separated also works)
   --json           Machine-readable JSON output
@@ -42,10 +42,10 @@ Environment variables:
 
 Examples:
   ./status.sh
-  ./status.sh --target ~/revfleet/revealui
+  ./status.sh --target ~/revealfleet/revealui
   ./status.sh --editor zed --json
-  ./status.sh --target ~/revfleet/revealui --editor cursor --json
-  ./status.sh --target ~/revfleet/revdev --editor claude --verify
+  ./status.sh --target ~/revealfleet/revealui --editor cursor --json
+  ./status.sh --target ~/revealfleet/revdev --editor claude --verify
 EOF
   exit 0
 }
@@ -109,9 +109,9 @@ fi
 
 # --- Discovery ---
 
-# Scan ~/revfleet/*/ for directories with symlinks pointing back to this repo.
+# Scan ~/revealfleet/*/ for directories with symlinks pointing back to this repo.
 discover_targets() {
-  for dir in "$HOME"/revfleet/*/; do
+  for dir in "$HOME"/revealfleet/*/; do
     [[ -d "$dir" ]] || continue
     local dir_real
     dir_real="$(realpath "$dir")"

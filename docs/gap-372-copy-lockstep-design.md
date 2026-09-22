@@ -26,7 +26,7 @@ into each fleet repo. Author one gate in revcon and call it from every consumer.
 ## Rollout shape (per consumer)
 
 1. `.gitignore`: use `.claude/*` + negations for `rules/`, `agents/`, `skills/`, `.revcon-manifest.json` (not bare `.claude/`).
-2. `link.sh --target <repo> --profile revfleet --editor claude --mode copy` (add profiles as needed).
+2. `link.sh --target <repo> --profile revealfleet --editor claude --mode copy` (add profiles as needed).
 3. `git add` the materialized paths + manifest.
 4. CI step: `bash path/to/verify-copy-lockstep.sh --target .` (checkout this repo or copy the script; SSOT is here).
 5. revkit `FLEET_TARGETS` entry uses `:copy`.

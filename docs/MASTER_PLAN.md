@@ -9,7 +9,7 @@ staleness-status: FRESH
 # RevCon — Master Plan
 
 **Last Updated:** 2026-07-23  
-**Status:** Active — symlink + **copy-mode** materialization; profiles **`revfleet`** + **`revealui`**  
+**Status:** Active — symlink + **copy-mode** materialization; profiles **`revealfleet`** + **`revealui`**  
 **Owner:** RevealUI Studio  
 **Repo:** [RevealUIStudio/revcon](https://github.com/RevealUIStudio/revcon)
 
@@ -24,7 +24,7 @@ staleness-status: FRESH
 
 - **`link.sh` / `unlink.sh` / `status.sh`** — link, remove, and verify editor configs + agent rules  
 - **`base/`** — universal Cursor + Zed (and related) configs  
-- **`profiles/revfleet`**, **`profiles/revealui`** — layered overlays (`--profile` is repeatable; later wins)  
+- **`profiles/revealfleet`**, **`profiles/revealui`** — layered overlays (`--profile` is repeatable; later wins)  
 - **Copy mode** — `--mode copy` materializes tracked files + `.revcon-manifest.json` (sha256); used for monorepo rules-lockstep  
 - **`harnesses/`** — agents, commands, generators, rules, skills (Claude Code-shaped material shipped into targets)  
 - **Dry-run / list / single-editor** flags as documented in `README.md`
@@ -34,7 +34,7 @@ staleness-status: FRESH
 | Capability | Status | Confidence |
 |---|---|---|
 | Symlink link/unlink | Built | High — fleet daily driver |
-| Multi-profile overlay | Built | High — revfleet + revealui |
+| Multi-profile overlay | Built | High — revealfleet + revealui |
 | Copy-mode materialize + manifest | Built | High — revealui `validate:rules-lockstep` consumers |
 | Harness generators under `harnesses/` | Built | High |
 
@@ -50,7 +50,7 @@ staleness-status: FRESH
 
 ## Composition
 
-RevCon is not Pro-gated. It is the canonical editor/agent config product for RevFleet (no parallel `@revealui/editors` package).
+RevCon is not Pro-gated. It is the canonical editor/agent config product for RevealFleet (no parallel `@revealui/editors` package).
 
 | Other product | Relationship |
 |---|---|

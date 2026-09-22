@@ -2,10 +2,10 @@
 # link.sh — Symlink editor configs into a target project.
 #
 # Usage:
-#   ./link.sh --target ~/revfleet/revealui --profile revealui
-#   ./link.sh --target ~/revfleet/revealui --profile revfleet --profile revealui
-#   ./link.sh --target ~/revfleet/revforge                    # base only
-#   ./link.sh --target ~/revfleet/revealui --editor zed         # zed only
+#   ./link.sh --target ~/revealfleet/revealui --profile revealui
+#   ./link.sh --target ~/revealfleet/revealui --profile revealfleet --profile revealui
+#   ./link.sh --target ~/revealfleet/revforge                    # base only
+#   ./link.sh --target ~/revealfleet/revealui --editor zed         # zed only
 #   ./link.sh --list                                            # show available profiles
 #
 # Creates real directories (.zed/, .cursor/, .claude/, .agents/) in the target,
@@ -39,7 +39,7 @@ Usage: link.sh [OPTIONS]
 Options:
   --target DIR     Project directory to link into (required)
   --profile NAME   Profile overlay (repeatable; later wins on collision)
-                   Examples: revfleet, revealui, revforge
+                   Examples: revealfleet, revealui, revforge
   --editor NAME    Editor to link: cursor, zed, vscode, claude, agents, all (default: all)
   --mode NAME      Distribution mode: symlink (default) or copy. Copy mode
                    materializes real files so the target repo can git-track
@@ -56,12 +56,12 @@ Environment variables:
                               private profiles take precedence over in-repo ones.
 
 Examples:
-  ./link.sh --target ~/revfleet/revealui --profile revealui
-  ./link.sh --target ~/revfleet/revealui --profile revfleet --profile revealui
-  ./link.sh --target ~/revfleet/revforge --profile revfleet
-  ./link.sh --target ~/revfleet/foo --editor zed
-  ./link.sh --dry-run --target ~/revfleet/foo --profile revfleet
-  REVCON_SKIP_EDITORS=cursor ./link.sh --target ~/revfleet/foo --profile revfleet
+  ./link.sh --target ~/revealfleet/revealui --profile revealui
+  ./link.sh --target ~/revealfleet/revealui --profile revealfleet --profile revealui
+  ./link.sh --target ~/revealfleet/revforge --profile revealfleet
+  ./link.sh --target ~/revealfleet/foo --editor zed
+  ./link.sh --dry-run --target ~/revealfleet/foo --profile revealfleet
+  REVCON_SKIP_EDITORS=cursor ./link.sh --target ~/revealfleet/foo --profile revealfleet
 EOF
   exit 0
 }

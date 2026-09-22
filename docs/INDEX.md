@@ -6,7 +6,7 @@ updated: 2026-07-23
 
 # RevCon — Documentation Index
 
-Editor + agent-rule sync via symlinks. Two profiles shipped (`revealui`, `revfleet`); per-product profile composition.
+Editor + agent-rule sync via symlinks. Two profiles shipped (`revealui`, `revealfleet`); per-product profile composition.
 
 ## This repo's masters
 
@@ -15,4 +15,4 @@ Editor + agent-rule sync via symlinks. Two profiles shipped (`revealui`, `revfle
 
 ## Fleet coordination
 
-Part of [RevFleet](https://github.com/RevealUIStudio). Cross-fleet coordination, planning, and lane tracking live in the agent dev environment — not in this public repo.
+Part of [RevealFleet](https://github.com/RevealUIStudio). Cross-fleet coordination, planning, and lane tracking live in the agent dev environment — not in this public repo.
