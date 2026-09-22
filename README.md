@@ -225,7 +225,7 @@ commit signing locally before pushing.
 ## Version
 
 This repo has no `package.json`, so its version is tracked in the root
-`VERSION` file. Current: `0.1.0`.
+`VERSION` file. Current: `0.2.0`.
 
 ## License
 
