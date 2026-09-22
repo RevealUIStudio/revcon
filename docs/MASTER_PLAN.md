@@ -50,7 +50,7 @@ staleness-status: FRESH
 
 ## Composition
 
-RevCon is not Pro-gated. It is the canonical editor/agent config product for RevFleet (no parallel `@revealui/editors` package).
+RevCon is not Pro-gated. It is the canonical editor/agent config product for RevealFleet (no parallel `@revealui/editors` package).
 
 | Other product | Relationship |
 |---|---|
