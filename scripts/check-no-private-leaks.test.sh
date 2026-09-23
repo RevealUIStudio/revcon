@@ -6,7 +6,10 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SCAN="$ROOT/scripts/check-no-private-leaks.sh"
-PAYLOAD='/mnt/c/Users/Example/secret'
+# Assembled so this tracked test file does not itself contain a leak path.
+drive=c
+name=Example
+PAYLOAD="/mnt/${drive}/Users/${name}/secret"
 
 cleanup() {
   git -C "$ROOT" rm --cached -q -- .claude/settings.local.json leak-scan-fixture/note.txt >/dev/null 2>&1 || true
