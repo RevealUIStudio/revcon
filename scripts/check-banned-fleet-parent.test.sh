@@ -62,7 +62,7 @@ mkdir -p "$good"
 printf '%s\n' "./link.sh --target ~/revealfleet/revealui --profile revealui" >"$good/README.md"
 if ! bash "$SCAN" "$good/README.md" >"$tmpdir/good.txt" 2>&1; then
   cat "$tmpdir/good.txt" >&2
-  fail "~/revealfleet README example should pass"
+  fail "$HOME/revealfleet README example should pass"
 fi
 
 echo "check-banned-fleet-parent passed"
