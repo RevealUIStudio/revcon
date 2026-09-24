@@ -266,6 +266,26 @@ test_status_default_scan_sandboxed_to_fake_home() {
   fi
 }
 
+# The retired parent token is quote-split so this tracked file does not cite it.
+test_status_default_scan_root_is_revealfleet() {
+  local name="status.sh default scan root is ~/revealfleet when only the retired parent has a link"
+  setup_fixture_repo
+  # Earlier scenarios leave a linked tree under the real scan root.
+  rm -rf "$FAKE_HOME/revealfleet"
+  local retired="${FAKE_HOME}/rev""fleet"
+  mkdir -p "$retired/demo-project"
+  run_script link.sh --target "$retired/demo-project" --profile testprofile --editor zed >/dev/null 2>&1
+
+  local json count
+  json="$(run_script status.sh --editor zed --json 2>&1)"
+  count="$(json_field "$json" '.targets | length')"
+  if [[ "$count" == "0" ]]; then
+    pass "$name"
+  else
+    fail "$name (expected 0 targets, got count='$count'; json=$json)"
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # 5. re-running link is idempotent (no errors, no duplicate state)
 # ---------------------------------------------------------------------------
@@ -334,6 +354,7 @@ test_copy_mode_manifest_and_drift
 test_unlink_scoped_removal
 test_status_in_sync_and_drifted
 test_status_default_scan_sandboxed_to_fake_home
+test_status_default_scan_root_is_revealfleet
 test_link_idempotent_symlink_mode
 test_link_idempotent_copy_mode
 

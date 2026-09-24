@@ -140,6 +140,8 @@ jobs:
           persist-credentials: false
       - name: Scan for private paths and credentials
         run: bash scripts/check-no-private-leaks.sh
+      - name: Prove banned fleet parent fails in docs
+        run: bash scripts/check-banned-fleet-parent.test.sh
 
   # GAP-358: accidental skill multi-copy lockstep (claude canonical → agents + generator)
   skill-lockstep:
