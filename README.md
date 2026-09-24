@@ -96,6 +96,8 @@ profile `SKILL.md` files.
    ```bash
    ./link.sh --target ~/revealfleet/revealui --profile revealfleet --profile revealui
    ```
+   The canonical fleet profile is `revealfleet`. `./link.sh --list` names a
+   deprecated alias when one still resolves to that profile.
 4. Editor-written state (cache, chat history) stays in the real directory, not here
 5. `.gitignore` is updated so symlinked dirs are never committed
 
