@@ -63,7 +63,7 @@ revcon/
 | Flag | Default | Purpose |
 |---|---|---|
 | `--target <path>` | (required) | Target project directory (where symlinks land) |
-| `--profile <name>` | (none — base only) | Profile to overlay on base; repeatable. `profiles/` ships `revealui` and `revealfleet` today; later `--profile` wins on filename collision |
+| `--profile <name>` | (none, base only) | Profile to overlay on base; repeatable. `profiles/` ships `revealui` and `revealfleet` today; later `--profile` wins on filename collision. A deprecated alias still resolves to `revealfleet` (`./link.sh --list`). |
 | `--editor <name>` | (all) | Limit to one editor: `cursor`, `zed`, `vscode`, `claude`, `agents` |
 | `--skip <name>` | (none) | Skip an editor (repeatable; also settable via `REVCON_SKIP_EDITORS`) |
 | `--dry-run` | off | Preview without writing |

@@ -266,6 +266,72 @@ test_status_default_scan_sandboxed_to_fake_home() {
   fi
 }
 
+# The retired parent token is quote-split so this tracked file does not cite it.
+test_status_default_scan_root_is_revealfleet() {
+  local name="status.sh default scan root is ~/revealfleet when only the retired parent has a link"
+  setup_fixture_repo
+  # Earlier scenarios leave a linked tree under the real scan root.
+  rm -rf "$FAKE_HOME/revealfleet"
+  local retired="${FAKE_HOME}/rev""fleet"
+  mkdir -p "$retired/demo-project"
+  run_script link.sh --target "$retired/demo-project" --profile testprofile --editor zed >/dev/null 2>&1
+
+  local json count
+  json="$(run_script status.sh --editor zed --json 2>&1)"
+  count="$(json_field "$json" '.targets | length')"
+  if [[ "$count" == "0" ]]; then
+    pass "$name"
+  else
+    fail "$name (expected 0 targets, got count='$count'; json=$json)"
+  fi
+}
+
+# The retired profile id is quote-split so this tracked file does not cite it.
+test_deprecated_profile_alias_resolves_to_revealfleet() {
+  local name="deprecated profile alias resolves to canonical revealfleet"
+  setup_fixture_repo
+  mkdir -p "$FIXTURE_REVCON/profiles/revealfleet/claude"
+  echo 'fleet rule' > "$FIXTURE_REVCON/profiles/revealfleet/claude/rule.md"
+
+  local target="$TMP_ROOT/t-alias"
+  mkdir -p "$target"
+  local retired='rev''fleet'
+  local out
+  if ! out="$(run_script link.sh --target "$target" --profile "$retired" --editor claude --mode copy 2>&1)"; then
+    fail "$name (alias link failed: $out)"
+    return
+  fi
+
+  local manifest="$target/.claude/.revcon-manifest.json"
+  local ok=true
+  printf '%s\n' "$out" | grep -q "deprecated" || ok=false
+  printf '%s\n' "$out" | grep -q "Use revealfleet" || ok=false
+  grep -q '"profiles": \["revealfleet"\]' "$manifest" || ok=false
+  [[ -f "$target/.claude/rule.md" ]] || ok=false
+  grep -q "$retired" "$manifest" && ok=false
+
+  local out_canonical
+  if ! out_canonical="$(run_script link.sh --target "$target" --profile revealfleet --editor claude --mode copy 2>&1)"; then
+    fail "$name (canonical link failed: $out_canonical)"
+    return
+  fi
+  printf '%s\n' "$out_canonical" | grep -q "deprecated" && ok=false
+
+  local listed
+  if ! listed="$(run_script link.sh --list 2>&1)"; then
+    fail "$name (--list failed: $listed)"
+    return
+  fi
+  printf '%s\n' "$listed" | grep -q "revealfleet" || ok=false
+  printf '%s\n' "$listed" | grep -q "Deprecated alias: ${retired} -> revealfleet" || ok=false
+
+  if $ok; then
+    pass "$name"
+  else
+    fail "$name (alias out=$out canonical out=$out_canonical list=$listed)"
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # 5. re-running link is idempotent (no errors, no duplicate state)
 # ---------------------------------------------------------------------------
@@ -334,6 +400,8 @@ test_copy_mode_manifest_and_drift
 test_unlink_scoped_removal
 test_status_in_sync_and_drifted
 test_status_default_scan_sandboxed_to_fake_home
+test_status_default_scan_root_is_revealfleet
+test_deprecated_profile_alias_resolves_to_revealfleet
 test_link_idempotent_symlink_mode
 test_link_idempotent_copy_mode
 

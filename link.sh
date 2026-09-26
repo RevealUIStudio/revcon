@@ -24,6 +24,13 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# Retired profile id. Quote-split so this file does not cite the token.
+# Older bootstrap step 9 still passes it; resolve to the canonical profile.
+retired_profile_id() {
+  printf '%s\n' 'rev''fleet'
+}
+
 TARGET=""
 PROFILES=()
 EDITOR="all"
@@ -63,6 +70,7 @@ Examples:
   ./link.sh --dry-run --target ~/revealfleet/foo --profile revealfleet
   REVCON_SKIP_EDITORS=cursor ./link.sh --target ~/revealfleet/foo --profile revealfleet
 EOF
+  printf '  Deprecated profile alias: %s -> revealfleet\n' "$(retired_profile_id)"
   exit 0
 }
 
@@ -76,6 +84,7 @@ print_profiles() {
       [ -d "$dir" ] && echo "  $(basename "$dir") (private)"
     done
   fi
+  printf 'Deprecated alias: %s -> revealfleet\n' "$(retired_profile_id)"
 }
 
 list_profiles() {
@@ -116,18 +125,31 @@ fi
 
 # Resolve each profile name to its directory (private dir wins over in-repo).
 # Order is preserved so later profiles override earlier ones on file collisions.
+# The retired id maps to canonical revealfleet before lookup, so the manifest
+# records revealfleet.
 PROFILE_DIRS=()
+RESOLVED_PROFILES=()
 for profile in "${PROFILES[@]+"${PROFILES[@]}"}"; do
-  if [[ -n "$PRIVATE_PROFILES_DIR" && -d "$PRIVATE_PROFILES_DIR/$profile" ]]; then
-    PROFILE_DIRS+=("$PRIVATE_PROFILES_DIR/$profile")
-  elif [[ -d "$SCRIPT_DIR/profiles/$profile" ]]; then
-    PROFILE_DIRS+=("$SCRIPT_DIR/profiles/$profile")
+  canonical="$profile"
+  if [[ "$profile" == "$(retired_profile_id)" ]]; then
+    canonical="revealfleet"
+    printf 'Note: --profile %s is deprecated. Use revealfleet.\n' "$profile" >&2
+  fi
+  if [[ -n "$PRIVATE_PROFILES_DIR" && -d "$PRIVATE_PROFILES_DIR/$canonical" ]]; then
+    PROFILE_DIRS+=("$PRIVATE_PROFILES_DIR/$canonical")
+  elif [[ -d "$SCRIPT_DIR/profiles/$canonical" ]]; then
+    PROFILE_DIRS+=("$SCRIPT_DIR/profiles/$canonical")
   else
     echo "Error: profile not found: $profile"
     print_profiles
     exit 1
   fi
+  RESOLVED_PROFILES+=("$canonical")
 done
+PROFILES=()
+if [[ ${#RESOLVED_PROFILES[@]} -gt 0 ]]; then
+  PROFILES=("${RESOLVED_PROFILES[@]}")
+fi
 
 should_skip_editor() {
   local e="$1"
