@@ -116,6 +116,11 @@ if [[ "$MODE" != "symlink" && "$MODE" != "copy" ]]; then
   exit 1
 fi
 
+if [[ "$MODE" == "copy" ]] && ! command -v jq >/dev/null; then
+  echo "Error: copy mode requires jq for structured manifests" >&2
+  exit 1
+fi
+
 TARGET="$(realpath "$TARGET")"
 
 if [[ ! -d "$TARGET" ]]; then
@@ -164,6 +169,13 @@ declare -A EDITOR_DIRS=(
   [vscode]=".vscode"
   [claude]=".claude"
   [agents]=".agents"
+)
+
+# Shared content is manual Markdown reference material, never auto-loaded rules
+# or executable commands. Every adapter supports explicit file reading.
+declare -A SHARED_WORKFLOW_DIRS=(
+  [cursor]="workflows" [zed]="workflows" [vscode]="workflows"
+  [claude]="workflows" [agents]="workflows"
 )
 
 LINKED=0
@@ -228,31 +240,18 @@ write_manifest() {
   local -n fmap="$3"
   local manifest="$target_dir/.revcon-manifest.json"
 
-  local profiles_json=""
-  local p
-  for p in "${PROFILES[@]+"${PROFILES[@]}"}"; do
-    profiles_json+="${profiles_json:+, }\"$p\""
-  done
-
-  {
-    printf '{\n'
-    printf '  "mode": "copy",\n'
-    printf '  "editor": "%s",\n' "$editor"
-    printf '  "profiles": [%s],\n' "$profiles_json"
-    printf '  "files": {\n'
-    local first=true
-    local rel
-    for rel in $(printf '%s\n' "${!fmap[@]}" | sort); do
-      local src="${fmap[$rel]}"
-      local hash
-      hash="$(sha256sum "$src" | cut -d' ' -f1)"
-      $first || printf ',\n'
-      first=false
-      printf '    "%s": {\n      "source": "%s",\n      "sha256": "%s"\n    }' \
-        "$rel" "$(manifest_source "$src")" "$hash"
-    done
-    printf '\n  }\n}\n'
-  } > "$manifest"
+  local profiles_json files_json='{}' rel src hash
+  profiles_json="$(jq -cn --args '$ARGS.positional' "${PROFILES[@]}")"
+  while IFS= read -r -d '' rel; do
+    src="${fmap[$rel]}"
+    hash="$(sha256sum < "$src" | cut -d' ' -f1)"
+    files_json="$(jq -cn --argjson files "$files_json" --arg rel "$rel" \
+      --arg source "$(manifest_source "$src")" --arg hash "$hash" \
+      '$files + {($rel): {source: $source, sha256: $hash}}')"
+  done < <(printf '%s\0' "${!fmap[@]}" | sort -z)
+  jq -Sn --arg editor "$editor" --argjson profiles "$profiles_json" \
+    --argjson files "$files_json" \
+    '{mode: "copy", editor: $editor, profiles: $profiles, files: $files}' > "$manifest"
   echo "  [manifest] ${manifest#"$TARGET/"}"
 }
 
@@ -300,7 +299,7 @@ link_editor() {
   local has_any_profile=false
   [[ -d "$base_src" ]] && has_base=true
   for pdir in "${PROFILE_DIRS[@]+"${PROFILE_DIRS[@]}"}"; do
-    if [[ -d "$pdir/$editor" ]]; then
+    if [[ -d "$pdir/$editor" || -d "$pdir/workflows" || -L "$pdir/workflows" ]]; then
       has_any_profile=true
       break
     fi
@@ -330,6 +329,26 @@ link_editor() {
 
   for pdir in "${PROFILE_DIRS[@]+"${PROFILE_DIRS[@]}"}"; do
     local profile_src="$pdir/$editor"
+    # Per-profile shared content precedes that profile's adapter overlay.
+    local shared_src="$pdir/workflows"
+    if [[ -L "$shared_src" ]]; then
+      echo "Error: shared workflow root must be a real directory: $shared_src" >&2
+      exit 1
+    fi
+    if [[ -d "$shared_src" ]]; then
+      if ! find "$shared_src" -print >/dev/null; then
+        echo "Error: cannot enumerate workflow sources: $shared_src" >&2
+        exit 1
+      fi
+      while IFS= read -r -d '' file; do
+        [[ -f "$file" && ! -L "$file" && -r "$file" && "$file" == *.md && ! "$file" =~ [[:cntrl:]] ]] || {
+          echo "Error: shared workflows require readable Markdown files: $file" >&2
+          exit 1
+        }
+        local rel="${SHARED_WORKFLOW_DIRS[$editor]}/${file#"$shared_src/"}"
+        file_map["$rel"]="$file"
+      done < <(find "$shared_src" \( -type f -o -type l \) -print0 | sort -z)
+    fi
     [[ -d "$profile_src" ]] || continue
     while IFS= read -r -d '' file; do
       local rel="${file#"$profile_src/"}"
@@ -337,8 +356,56 @@ link_editor() {
     done < <(find "$profile_src" -type f -print0 | sort -z)
   done
 
+  # Shared/manual documents preserve user ownership during migration. A copy
+  # is managed only while its manifest hash still matches; external symlinks
+  # and unrecorded files are never adopted, even if their bytes match.
+  for rel in "${!file_map[@]}"; do
+    [[ "$rel" == "${SHARED_WORKFLOW_DIRS[$editor]}/"* ]] || continue
+    if [[ "$rel" =~ [[:cntrl:]] ]]; then
+      echo "Error: workflow paths cannot contain control characters" >&2
+      exit 1
+    fi
+    local dst="$target_dir/$rel" resolved
+    resolved="$(realpath -m -- "$(dirname "$dst")")/$(basename "$dst")"
+    if [[ -L "$target_dir" || "$resolved" != "$target_dir/"* ]]; then
+      echo "Error: unsafe workflow destination: $dst" >&2
+      exit 1
+    fi
+    if [[ -L "$dst" ]]; then
+      local existing
+      existing="$(readlink "$dst")"
+      [[ "$existing" == /* ]] || existing="$(dirname "$dst")/$existing"
+      existing="$(realpath -m -- "$existing")"
+      local managed=false candidate
+      candidate="$(realpath -m -- "$base_src/$rel")"
+      [[ "$existing" == "$candidate" ]] && managed=true
+      for pdir in "${PROFILE_DIRS[@]}"; do
+        for candidate in "$pdir/$editor/$rel" "$pdir/workflows/${rel#"${SHARED_WORKFLOW_DIRS[$editor]}/"}"; do
+          [[ "$existing" == "$(realpath -m -- "$candidate")" ]] && managed=true
+        done
+      done
+      if ! $managed; then
+        echo "Error: preserving user workflow symlink: $dst" >&2
+        exit 1
+      fi
+    elif [[ -e "$dst" ]]; then
+      local manifest="$target_dir/.revcon-manifest.json" want_hash=""
+      if [[ -f "$manifest" && ! -L "$manifest" ]] && command -v jq >/dev/null; then
+        want_hash="$(jq -r --arg rel "$rel" '.files[$rel].sha256 // empty' "$manifest" 2>/dev/null || true)"
+      fi
+      if [[ "$MODE" == "symlink" ]]; then
+        echo "Error: unlink verified workflow copies before switching to symlink mode: $dst" >&2
+        exit 1
+      fi
+      if [[ ! -f "$dst" || -z "$want_hash" || "$(sha256sum < "$dst" | cut -d' ' -f1)" != "$want_hash" ]]; then
+        echo "Error: preserving unowned or modified workflow: $dst" >&2
+        exit 1
+      fi
+    fi
+  done
+
   # Create subdirectories and symlink files
-  for rel in $(printf '%s\n' "${!file_map[@]}" | sort); do
+  while IFS= read -r -d '' rel; do
     local src="${file_map[$rel]}"
     local dst="$target_dir/$rel"
     local dst_parent
@@ -353,7 +420,7 @@ link_editor() {
     else
       link_file "$src" "$dst"
     fi
-  done
+  done < <(printf '%s\0' "${!file_map[@]}" | sort -z)
 
   if [[ "$MODE" == "copy" ]] && ! $DRY_RUN; then
     write_manifest "$target_dir" "$editor" file_map
