@@ -401,7 +401,7 @@ test_deprecated_profile_alias_resolves_to_revealfleet() {
   local ok=true
   printf '%s\n' "$out" | grep -q "deprecated" || ok=false
   printf '%s\n' "$out" | grep -q "Use revealfleet" || ok=false
-  grep -q '"profiles": \["revealfleet"\]' "$manifest" || ok=false
+  jq -e '.profiles == ["revealfleet"]' "$manifest" >/dev/null || ok=false
   [[ -f "$target/.claude/rule.md" ]] || ok=false
   grep -q "$retired" "$manifest" && ok=false
 
@@ -506,6 +506,12 @@ test_link_idempotent_symlink_mode
 test_link_idempotent_copy_mode
 
 echo ""
+if python3 "$REPO_ROOT/test/workflow-distribution.test.py"; then
+  pass "shared workflow distribution fixtures"
+else
+  fail "shared workflow distribution fixtures"
+fi
+
 echo "== $PASS_COUNT passed, $FAIL_COUNT failed =="
 
 if [[ "$FAIL_COUNT" -gt 0 ]]; then
