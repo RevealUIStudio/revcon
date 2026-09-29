@@ -246,43 +246,138 @@ test_status_in_sync_and_drifted() {
   fi
 }
 
-test_status_default_scan_sandboxed_to_fake_home() {
-  local name="status.sh default scan (no --target) stays inside the fake HOME/revealfleet"
+test_status_default_scan_sandboxed_to_fixture_parent() {
+  local name="status.sh default scan (no --target) discovers sibling projects"
   setup_fixture_repo
-  mkdir -p "$FAKE_HOME/revealfleet"
-  local target="$FAKE_HOME/revealfleet/demo-project"
+  local target="$TMP_ROOT/demo-project"
   mkdir -p "$target"
   run_script link.sh --target "$target" --profile testprofile --editor zed >/dev/null 2>&1
 
-  local json count path
+  local json count found
   json="$(run_script status.sh --editor zed --json 2>&1)"
   count="$(json_field "$json" '.targets | length')"
-  path="$(json_field "$json" '.targets[0].path')"
+  found="$(printf '%s' "$json" | jq -r --arg target "$target" 'any(.targets[]; .path == $target)' 2>/dev/null)"
 
-  if [[ "$count" == "1" && "$path" == "$target" ]]; then
+  if [[ "$count" -ge 1 && "$found" == "true" ]]; then
     pass "$name"
   else
-    fail "$name (expected 1 target at $target, got count='$count' path='$path'; json=$json)"
+    fail "$name (expected $target among discovered siblings, got count='$count'; json=$json)"
+  fi
+}
+
+test_status_rejects_invalid_copy_manifest() {
+  local name="status --verify rejects malformed copy manifest"
+  setup_fixture_repo
+  local target="$TMP_ROOT/invalid-manifest"
+  mkdir -p "$target/.claude"
+  printf '{invalid json' > "$target/.claude/.revcon-manifest.json"
+  local out
+  if out="$(run_script status.sh --target "$target" --editor claude --verify 2>&1)"; then
+    fail "$name (unexpected success: $out)"
+  elif [[ "$out" == *"invalid copy manifest"* ]]; then
+    pass "$name"
+  else
+    fail "$name (unexpected error: $out)"
+  fi
+}
+
+test_status_rejects_empty_or_multiple_manifests() {
+  local name="status --verify rejects empty and multiple JSON documents"
+  setup_fixture_repo
+  local target="$TMP_ROOT/invalid-doc-count"
+  mkdir -p "$target/.claude"
+  local manifest="$target/.claude/.revcon-manifest.json"
+  : > "$manifest"
+  local empty_rc=0 multiple_rc=0
+  run_script status.sh --target "$target" --editor claude --verify >/dev/null 2>&1 || empty_rc=$?
+  printf '%s\n%s\n' '{"mode":"copy","profiles":[],"files":{}}' '{"mode":"copy","profiles":[],"files":{}}' > "$manifest"
+  run_script status.sh --target "$target" --editor claude --verify >/dev/null 2>&1 || multiple_rc=$?
+  if [[ "$empty_rc" -eq 1 && "$multiple_rc" -eq 1 ]]; then
+    pass "$name"
+  else
+    fail "$name (empty exit=$empty_rc, multiple exit=$multiple_rc)"
+  fi
+}
+
+test_status_copy_manifest_keeps_special_path_bytes() {
+  local name="status --verify reads copy paths with quotes and backslashes"
+  setup_fixture_repo
+  local target="$TMP_ROOT/special-copy-path"
+  local rel='agents/quoted"back\slash.md'
+  local source_rel='base/zed/quoted"source\path.json'
+  mkdir -p "$target/.claude/agents"
+  printf 'copy content\n' > "$FIXTURE_REVCON/$source_rel"
+  cp "$FIXTURE_REVCON/$source_rel" "$target/.claude/$rel"
+  local hash
+  hash="$(sha256sum < "$target/.claude/$rel" | cut -d' ' -f1)"
+  jq -n --arg rel "$rel" --arg source "$source_rel" --arg hash "$hash" \
+    '{mode:"copy",profiles:["testprofile"],files:{($rel):{source:$source,sha256:$hash}}}' \
+    > "$target/.claude/.revcon-manifest.json"
+  local out rc=0
+  out="$(run_script status.sh --target "$target" --editor claude --verify --json 2>&1)" || rc=$?
+  local recorded_name recorded_source recorded_state
+  recorded_name="$(printf '%s' "$out" | jq -r '.targets[0].editors.claude.files[0].name' 2>/dev/null)"
+  recorded_source="$(printf '%s' "$out" | jq -r '.targets[0].editors.claude.files[0].source' 2>/dev/null)"
+  recorded_state="$(printf '%s' "$out" | jq -r '.targets[0].editors.claude.files[0].state' 2>/dev/null)"
+  if [[ "$rc" -eq 0 && "$recorded_name" == "$rel" && "$recorded_source" == "$source_rel" && "$recorded_state" == "ok" ]]; then
+    pass "$name"
+  else
+    fail "$name (exit=$rc output=$out)"
+  fi
+}
+
+test_status_json_escapes_target_path() {
+  local name="status --json escapes quotes and backslashes in a target path"
+  setup_fixture_repo
+  local target="$TMP_ROOT/quoted\"target\\path"
+  mkdir -p "$target"
+  local out
+  out="$(run_script status.sh --target "$target" --editor zed --json)"
+  if [[ "$(printf '%s' "$out" | jq -er '.targets[0].path' 2>/dev/null)" == "$target" ]]; then
+    pass "$name"
+  else
+    fail "$name (invalid JSON or wrong path: $out)"
+  fi
+}
+
+test_client_scanner_rejects_grep_failure() {
+  local name="client leak scanner rejects an incomplete grep scan"
+  local fakebin="$TMP_ROOT/fakebin"
+  mkdir -p "$fakebin"
+  printf '#!/bin/sh\nexit 2\n' > "$fakebin/grep"
+  chmod +x "$fakebin/grep"
+  local target="$TMP_ROOT/client-scan"
+  mkdir -p "$target"
+  local out rc=0
+  out="$(PATH="$fakebin:$PATH" bash "$REPO_ROOT/scripts/check-client-leaks.sh" "$target" 2>&1)" || rc=$?
+  if [[ "$rc" -eq 2 && "$out" == *"could not complete"* ]]; then
+    pass "$name"
+  else
+    fail "$name (exit=$rc output=$out)"
   fi
 }
 
 # The retired parent token is quote-split so this tracked file does not cite it.
-test_status_default_scan_root_is_revealfleet() {
-  local name="status.sh default scan root is ~/revealfleet when only the retired parent has a link"
+test_status_default_scan_ignores_home_roots() {
+  local name="status.sh default scan uses the checkout parent, not HOME roots"
   setup_fixture_repo
-  # Earlier scenarios leave a linked tree under the real scan root.
-  rm -rf "$FAKE_HOME/revealfleet"
+  local sibling="$TMP_ROOT/root-check-project"
+  mkdir -p "$sibling"
+  run_script link.sh --target "$sibling" --profile testprofile --editor zed >/dev/null 2>&1
+  local nested="$FAKE_HOME/revealfleet/demo-project"
+  mkdir -p "$nested"
+  run_script link.sh --target "$nested" --profile testprofile --editor zed >/dev/null 2>&1
   local retired="${FAKE_HOME}/rev""fleet"
   mkdir -p "$retired/demo-project"
   run_script link.sh --target "$retired/demo-project" --profile testprofile --editor zed >/dev/null 2>&1
 
-  local json count
+  local json
   json="$(run_script status.sh --editor zed --json 2>&1)"
-  count="$(json_field "$json" '.targets | length')"
-  if [[ "$count" == "0" ]]; then
+  if printf '%s' "$json" | jq -e --arg sibling "$sibling" --arg nested "$nested" --arg retired "$retired/demo-project" \
+    '([.targets[].path] | index($sibling)) != null and ([.targets[].path] | index($nested)) == null and ([.targets[].path] | index($retired)) == null' >/dev/null 2>&1; then
     pass "$name"
   else
-    fail "$name (expected 0 targets, got count='$count'; json=$json)"
+    fail "$name (expected sibling only among test roots; json=$json)"
   fi
 }
 
@@ -399,8 +494,13 @@ test_symlink_link_creates_expected_links
 test_copy_mode_manifest_and_drift
 test_unlink_scoped_removal
 test_status_in_sync_and_drifted
-test_status_default_scan_sandboxed_to_fake_home
-test_status_default_scan_root_is_revealfleet
+test_status_default_scan_sandboxed_to_fixture_parent
+test_status_rejects_invalid_copy_manifest
+test_status_rejects_empty_or_multiple_manifests
+test_status_copy_manifest_keeps_special_path_bytes
+test_status_json_escapes_target_path
+test_client_scanner_rejects_grep_failure
+test_status_default_scan_ignores_home_roots
 test_deprecated_profile_alias_resolves_to_revealfleet
 test_link_idempotent_symlink_mode
 test_link_idempotent_copy_mode
