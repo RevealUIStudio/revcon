@@ -2,16 +2,17 @@
 # status.sh — Report which editor-config profiles are linked where.
 #
 # Usage:
-#   ./status.sh                                        # scan ~/revealfleet/*/
-#   ./status.sh --target ~/revealfleet/revealui           # check one target
+#   ./status.sh                                        # scan sibling projects
+#   ./status.sh --target ~/revealfleet/revealui         # check one target
 #   ./status.sh --editor zed                           # filter to zed only
 #   ./status.sh --json                                 # machine-readable output
-#   ./status.sh --target ~/revealfleet/revealui --json    # combined
+#   ./status.sh --target ~/revealfleet/revealui --json  # combined
 #   ./status.sh --target DIR --editor claude --verify  # exit 1 on copy-mode drift (GAP-372)
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+FLEET_DIR="$(dirname "$SCRIPT_DIR")"
 TARGET=""
 EDITOR="all"
 JSON=false
@@ -26,7 +27,7 @@ usage() {
 Usage: status.sh [OPTIONS]
 
 Options:
-  --target DIR     Check a specific project directory (default: scan ~/revealfleet/*/)
+  --target DIR     Check a specific project directory (default: scan sibling projects)
   --editor NAME    Filter to editor: cursor, zed, vscode, claude, agents (default: all)
   --skip NAME      Skip a specific editor (repeatable, comma-separated also works)
   --json           Machine-readable JSON output
@@ -66,6 +67,28 @@ should_skip_editor() {
   local e="$1"
   [[ -z "$SKIP_EDITORS" ]] && return 1
   [[ ",$SKIP_EDITORS," == *",$e,"* ]]
+}
+
+json_quote() {
+  local input="$1" output='"' char code hex i
+  local LC_ALL=C
+  for ((i=0; i<${#input}; i++)); do
+    char="${input:i:1}"
+    case "$char" in
+      '"') output+='\"' ;;
+      '\') output+='\\' ;;
+      *)
+        printf -v code '%d' "'$char"
+        if (( code < 32 )); then
+          printf -v hex '%04x' "$code"
+          output+="\\u$hex"
+        else
+          output+="$char"
+        fi
+        ;;
+    esac
+  done
+  printf '%s"' "$output"
 }
 
 is_revcon_link() {
@@ -109,9 +132,9 @@ fi
 
 # --- Discovery ---
 
-# Scan ~/revealfleet/*/ for directories with symlinks pointing back to this repo.
+# Scan sibling projects of this revcon checkout for links and copy manifests.
 discover_targets() {
-  for dir in "$HOME"/revealfleet/*/; do
+  for dir in "$FLEET_DIR"/*/; do
     [[ -d "$dir" ]] || continue
     local dir_real
     dir_real="$(realpath "$dir")"
@@ -248,11 +271,39 @@ process_target() {
     local manifest="$target_dir/.revcon-manifest.json"
     if [[ -f "$manifest" ]]; then
       if command -v jq >/dev/null 2>&1; then
+        local manifest_rows
+        if ! manifest_rows="$(jq -s -r '
+          if length == 1 and (.[0] | type == "object")
+             and (.[0].mode == "copy")
+             and (.[0].profiles | type == "array")
+             and all(.[0].profiles[]; type == "string")
+             and (.[0].files | type == "object")
+             and all(.[0].files[]; type == "object" and (.source | type == "string") and (.sha256 | type == "string"))
+             and all(.[0].files | keys[]; length > 0 and (test("[[:cntrl:]]") | not))
+             and all(.[0].files[]; .source | test("[[:cntrl:]]") | not)
+          then .[0].files | to_entries[] | @base64
+          else error("invalid copy manifest") end
+        ' "$manifest" 2>/dev/null)"; then
+          if ! $JSON; then
+            echo "  [$e] invalid copy manifest"
+          else
+            local ej
+            ej=$(printf '"%s":{"mode":"copy","materialized":null,"error":"invalid manifest"}' "$e")
+            if [[ -n "$json_editors" ]]; then json_editors="$json_editors,$ej"; else json_editors="$ej"; fi
+          fi
+          VERIFY_BAD=$((VERIFY_BAD + 1))
+          continue
+        fi
         local m_total=0 m_ok=0 m_bad=0
         local m_profiles=""
         m_profiles="$(jq -r '.profiles | join(", ")' "$manifest" 2>/dev/null || true)"
-        while IFS=$'\t' read -r rel src_rel want_hash; do
-          [[ -n "$rel" ]] || continue
+        while IFS= read -r encoded; do
+          [[ -n "$encoded" ]] || continue
+          local row rel src_rel want_hash
+          row="$(printf '%s' "$encoded" | base64 -d)"
+          rel="$(jq -r '.key' <<< "$row")"
+          src_rel="$(jq -r '.value.source' <<< "$row")"
+          want_hash="$(jq -r '.value.sha256' <<< "$row")"
           ((m_total++)) || true
           local fpath="$target_dir/$rel"
           local state="ok"
@@ -260,7 +311,7 @@ process_target() {
             state="missing"
           else
             local have_hash
-            have_hash="$(sha256sum "$fpath" | cut -d' ' -f1)"
+            have_hash="$(sha256sum < "$fpath" | cut -d' ' -f1)"
             if [[ "$have_hash" != "$want_hash" ]]; then
               state="modified"
             else
@@ -274,7 +325,7 @@ process_target() {
                 state="orphaned"
               else
                 local src_hash
-                src_hash="$(sha256sum "$src_abs" | cut -d' ' -f1)"
+                src_hash="$(sha256sum < "$src_abs" | cut -d' ' -f1)"
                 [[ "$src_hash" == "$want_hash" ]] || state="stale"
               fi
             fi
@@ -288,17 +339,17 @@ process_target() {
           fi
           if $JSON; then
             local fe
-            fe=$(printf '{"name":"%s","source":"%s","state":"%s"}' "$rel" "$src_rel" "$state")
+            fe=$(printf '{"name":%s,"source":%s,"state":%s}' "$(json_quote "$rel")" "$(json_quote "$src_rel")" "$(json_quote "$state")")
             if [[ -n "$files_json" ]]; then files_json="$files_json,$fe"; else files_json="$fe"; fi
           fi
-        done < <(jq -r '.files | to_entries[] | [.key, .value.source, .value.sha256] | @tsv' "$manifest" 2>/dev/null)
+        done <<< "$manifest_rows"
         if ! $JSON; then
           echo "  [$e] $m_total materialized, $m_ok ok, $m_bad drifted (mode: copy, profiles: $m_profiles)"
           printf '%b' "$files_human"
         else
           local ej
-          ej=$(printf '"%s":{"mode":"copy","materialized":%d,"ok":%d,"drifted":%d,"profiles":"%s","files":[%s]}' \
-            "$e" "$m_total" "$m_ok" "$m_bad" "$m_profiles" "$files_json")
+          ej=$(printf '"%s":{"mode":"copy","materialized":%d,"ok":%d,"drifted":%d,"profiles":%s,"files":[%s]}' \
+            "$e" "$m_total" "$m_ok" "$m_bad" "$(json_quote "$m_profiles")" "$files_json")
           if [[ -n "$json_editors" ]]; then json_editors="$json_editors,$ej"; else json_editors="$ej"; fi
         fi
         if $VERIFY && (( m_bad > 0 )); then
@@ -357,9 +408,9 @@ process_target() {
       else
         local fe
         if $ok; then
-          fe=$(printf '{"name":"%s","source":"%s","ok":true}' "$rel_name" "$source_rel")
+          fe=$(printf '{"name":%s,"source":%s,"ok":true}' "$(json_quote "$rel_name")" "$(json_quote "$source_rel")")
         else
-          fe=$(printf '{"name":"%s","source":"%s","ok":false}' "$rel_name" "$source_rel")
+          fe=$(printf '{"name":%s,"source":%s,"ok":false}' "$(json_quote "$rel_name")" "$(json_quote "$source_rel")")
         fi
         if [[ -n "$files_json" ]]; then
           files_json="$files_json,$fe"
@@ -396,7 +447,7 @@ process_target() {
     else
       local pj
       if [[ -n "$profile" ]]; then
-        pj="\"$profile\""
+        pj="$(json_quote "$profile")"
       else
         pj="null"
       fi
@@ -413,7 +464,7 @@ process_target() {
 
   if $JSON; then
     local tj
-    tj=$(printf '{"path":"%s","editors":{%s}}' "$target" "$json_editors")
+    tj=$(printf '{"path":%s,"editors":{%s}}' "$(json_quote "$target")" "$json_editors")
     JSON_TARGETS+=("$tj")
   else
     echo ""
