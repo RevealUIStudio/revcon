@@ -489,12 +489,12 @@ test_private_scanner_covers_named_parents() {
   local target="$TMP_ROOT/private-path-fixture" out rc parent ok=true
   mkdir -p "$target"
   for parent in revealfleet revfleet replacement-fleet; do
-    printf '~/%s/.jv/workboard.md\n' "$parent" > "$target/example.md"
+    printf '%s/%s/.jv/workboard.md\n' '~' "$parent" > "$target/example.md"
     rc=0
     out="$(bash "$REPO_ROOT/scripts/check-no-private-leaks.sh" "$target" 2>&1)" || rc=$?
     [[ "$rc" -eq 1 && "$out" == *"LEAK:private-jv-repo"* ]] || ok=false
   done
-  printf '~/replacement-fleet/docs/public.md\n$REVEALFLEET_ROOT/.jv/workboard.md\n$root/.jv/workboard.md\n${REVEALFLEET_ROOT}/.jv/workboard.md\n' > "$target/example.md"
+  printf '%s/replacement-fleet/docs/public.md\n$REVEALFLEET_ROOT/.jv/workboard.md\n$root/.jv/workboard.md\n${REVEALFLEET_ROOT}/.jv/workboard.md\n' '~' > "$target/example.md"
   bash "$REPO_ROOT/scripts/check-no-private-leaks.sh" "$target" >/dev/null 2>&1 || ok=false
   if $ok; then pass "$name"; else fail "$name"; fi
 }
