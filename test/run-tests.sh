@@ -488,6 +488,24 @@ test_link_idempotent_copy_mode() {
 }
 
 # ---------------------------------------------------------------------------
+test_private_scanner_accepts_public_author_identity() {
+  local name="private scanner accepts public author identity and rejects private paths"
+  local target="$TMP_ROOT/public-author-fixture" out rc=0
+  mkdir -p "$target"
+  printf '%s\n' 'Author: founder@revealui.com' > "$target/example.md"
+  if ! bash "$REPO_ROOT/scripts/check-no-private-leaks.sh" "$target" >/dev/null 2>&1; then
+    fail "$name (public author rejected)"
+    return
+  fi
+  printf '%s\n' '/ho''me/exampleuser/private.md' >> "$target/example.md"
+  out="$(bash "$REPO_ROOT/scripts/check-no-private-leaks.sh" "$target" 2>&1)" || rc=$?
+  if [[ "$rc" -eq 1 && "$out" == *"LEAK:abs-home-path"* ]]; then
+    pass "$name"
+  else
+    fail "$name (exit=$rc output=$out)"
+  fi
+}
+
 # Run all scenarios
 # ---------------------------------------------------------------------------
 test_symlink_link_creates_expected_links
@@ -500,6 +518,7 @@ test_status_rejects_empty_or_multiple_manifests
 test_status_copy_manifest_keeps_special_path_bytes
 test_status_json_escapes_target_path
 test_client_scanner_rejects_grep_failure
+test_private_scanner_accepts_public_author_identity
 test_status_default_scan_ignores_home_roots
 test_deprecated_profile_alias_resolves_to_revealfleet
 test_link_idempotent_symlink_mode
