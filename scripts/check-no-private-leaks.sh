@@ -41,8 +41,7 @@ PATTERNS=(
   "abs-home-path|/home/[a-z][a-z0-9_-]+|absolute user home path (/home/<username>/...)"
   "abs-windows-user|[Cc]:[\\\\/]Users[\\\\/][A-Za-z0-9_-]+|absolute Windows user path (C:\\\\Users\\\\<name>)"
   "abs-wsl-windows-user|/mnt/[a-z]/Users/[A-Za-z0-9_-]+|WSL mount of a Windows user path (/mnt/c/Users/<name>)"
-  "private-jv-repo|/?revfleet/\\.jv|private repo path (~/revfleet/.jv/...)"
-  "private-jv-repo-rf|/?revealfleet/\\.jv|private repo path (~/revealfleet/.jv/...)"
+  "private-jv-repo|[~/][A-Za-z][A-Za-z0-9._-]*/\\.jv|private coordination path under any named parent"
   # Literal path-token scan (inventory, not an AST check). Docs, README
   # examples, and shell recipes must cite ~/revealfleet. The retired parent
   # token must not reappear. revealfleet does not match this word. Detector
