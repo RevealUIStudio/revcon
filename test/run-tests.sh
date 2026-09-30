@@ -357,7 +357,7 @@ test_client_scanner_rejects_grep_failure() {
   fi
 }
 
-# The retired parent token is quote-split so this tracked file does not cite it.
+# Unrelated HOME roots must not be treated as checkout siblings.
 test_status_default_scan_ignores_home_roots() {
   local name="status.sh default scan uses the checkout parent, not HOME roots"
   setup_fixture_repo
@@ -367,7 +367,7 @@ test_status_default_scan_ignores_home_roots() {
   local nested="$FAKE_HOME/revealfleet/demo-project"
   mkdir -p "$nested"
   run_script link.sh --target "$nested" --profile testprofile --editor zed >/dev/null 2>&1
-  local retired="${FAKE_HOME}/rev""fleet"
+  local retired="${FAKE_HOME}/unrelated-root"
   mkdir -p "$retired/demo-project"
   run_script link.sh --target "$retired/demo-project" --profile testprofile --editor zed >/dev/null 2>&1
 
@@ -381,49 +381,46 @@ test_status_default_scan_ignores_home_roots() {
   fi
 }
 
-# The retired profile id is quote-split so this tracked file does not cite it.
-test_deprecated_profile_alias_resolves_to_revealfleet() {
-  local name="deprecated profile alias resolves to canonical revealfleet"
+test_canonical_fleet_profile() {
+  local name="canonical fleet profile distributes without an alias"
   setup_fixture_repo
   mkdir -p "$FIXTURE_REVCON/profiles/revealfleet/claude"
   echo 'fleet rule' > "$FIXTURE_REVCON/profiles/revealfleet/claude/rule.md"
-
-  local target="$TMP_ROOT/t-alias"
+  local target="$TMP_ROOT/t-fleet"
   mkdir -p "$target"
-  local retired='rev''fleet'
-  local out
-  if ! out="$(run_script link.sh --target "$target" --profile "$retired" --editor claude --mode copy 2>&1)"; then
-    fail "$name (alias link failed: $out)"
-    return
+  local out manifest="$target/.claude/.revcon-manifest.json"
+  if ! out="$(run_script link.sh --target "$target" --profile revealfleet --editor claude --mode copy 2>&1)"; then
+    fail "$name (copy failed: $out)"; return
   fi
-
-  local manifest="$target/.claude/.revcon-manifest.json"
   local ok=true
-  printf '%s\n' "$out" | grep -q "deprecated" || ok=false
-  printf '%s\n' "$out" | grep -q "Use revealfleet" || ok=false
-  jq -e '.profiles == ["revealfleet"]' "$manifest" >/dev/null || ok=false
-  [[ -f "$target/.claude/rule.md" ]] || ok=false
-  grep -q "$retired" "$manifest" && ok=false
-
-  local out_canonical
-  if ! out_canonical="$(run_script link.sh --target "$target" --profile revealfleet --editor claude --mode copy 2>&1)"; then
-    fail "$name (canonical link failed: $out_canonical)"
-    return
-  fi
-  printf '%s\n' "$out_canonical" | grep -q "deprecated" && ok=false
-
+  jq -e '.profiles == ["revealfleet"] and .files["rule.md"].source == "profiles/revealfleet/claude/rule.md"' "$manifest" >/dev/null || ok=false
+  [[ "$(cat "$target/.claude/rule.md")" == 'fleet rule' ]] || ok=false
+  run_script link.sh --target "$target" --profile revealfleet --editor claude --mode copy >/dev/null 2>&1 || ok=false
+  local linked="$TMP_ROOT/t-fleet-link"
+  mkdir -p "$linked"
+  run_script link.sh --target "$linked" --profile revealfleet --editor claude >/dev/null 2>&1 || ok=false
+  [[ "$(readlink "$linked/.claude/rule.md")" == "$FIXTURE_REVCON/profiles/revealfleet/claude/rule.md" ]] || ok=false
   local listed
-  if ! listed="$(run_script link.sh --list 2>&1)"; then
-    fail "$name (--list failed: $listed)"
-    return
-  fi
-  printf '%s\n' "$listed" | grep -q "revealfleet" || ok=false
-  printf '%s\n' "$listed" | grep -q "Deprecated alias: ${retired} -> revealfleet" || ok=false
+  listed="$(run_script link.sh --list)"
+  [[ "$listed" == *"revealfleet"* && "$listed" != *"alias"* ]] || ok=false
+  if $ok; then pass "$name"; else fail "$name"; fi
+}
 
-  if $ok; then
+test_removed_fleet_alias_rejected() {
+  local name="removed fleet alias is rejected before target mutation"
+  setup_fixture_repo
+  mkdir -p "$FIXTURE_REVCON/profiles/revealfleet/claude"
+  echo 'fleet rule' > "$FIXTURE_REVCON/profiles/revealfleet/claude/rule.md"
+  local target="$TMP_ROOT/t-removed-profile"
+  mkdir -p "$target"
+  # Synthetic negative input; never a supported profile or path.
+  local removed='revfleet' out
+  if out="$(run_script link.sh --target "$target" --profile "$removed" --editor claude 2>&1)"; then
+    fail "$name (unexpected acceptance)"
+  elif [[ "$out" == *"profile not found"* && ! -e "$target/.claude" && ! -e "$target/.gitignore" ]]; then
     pass "$name"
   else
-    fail "$name (alias out=$out canonical out=$out_canonical list=$listed)"
+    fail "$name (unexpected error or mutation: $out)"
   fi
 }
 
@@ -487,6 +484,21 @@ test_link_idempotent_copy_mode() {
   if $ok; then pass "$name"; else fail "$name (out2: $out2)"; fi
 }
 
+test_private_scanner_covers_named_parents() {
+  local name="private scanner blocks canonical, historical and renamed coordination paths"
+  local target="$TMP_ROOT/private-path-fixture" out rc parent ok=true
+  mkdir -p "$target"
+  for parent in revealfleet revfleet replacement-fleet; do
+    printf '%s/%s/.jv/workboard.md\n' '~' "$parent" > "$target/example.md"
+    rc=0
+    out="$(bash "$REPO_ROOT/scripts/check-no-private-leaks.sh" "$target" 2>&1)" || rc=$?
+    [[ "$rc" -eq 1 && "$out" == *"LEAK:private-jv-repo"* ]] || ok=false
+  done
+  printf '%s/replacement-fleet/docs/public.md\n$REVEALFLEET_ROOT/.jv/workboard.md\n$root/.jv/workboard.md\n${REVEALFLEET_ROOT}/.jv/workboard.md\n' '~' > "$target/example.md"
+  bash "$REPO_ROOT/scripts/check-no-private-leaks.sh" "$target" >/dev/null 2>&1 || ok=false
+  if $ok; then pass "$name"; else fail "$name"; fi
+}
+
 # ---------------------------------------------------------------------------
 test_private_scanner_accepts_public_author_identity() {
   local name="private scanner accepts public author identity and rejects private paths"
@@ -520,7 +532,9 @@ test_status_json_escapes_target_path
 test_client_scanner_rejects_grep_failure
 test_private_scanner_accepts_public_author_identity
 test_status_default_scan_ignores_home_roots
-test_deprecated_profile_alias_resolves_to_revealfleet
+test_canonical_fleet_profile
+test_removed_fleet_alias_rejected
+test_private_scanner_covers_named_parents
 test_link_idempotent_symlink_mode
 test_link_idempotent_copy_mode
 

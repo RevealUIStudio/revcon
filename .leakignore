@@ -31,10 +31,10 @@ profiles/revealui/claude/skills/revealui-safety/SKILL.md                    lts-
 # username literals in its detection regexes + keywords to catch them in
 # issue bodies. This is the config that enforces the rule, not a leak of
 # it (mirrors the ci.yml anti-regression entries).
-# By-design: the same gitleaks config names the retired fleet parent in its
-# private-path regex and keywords so issue bodies that cite it still fail.
+# By-design: the same gitleaks config covers every named parent in its
+# private-path regex so private paths in issue bodies still fail.
 # Docs and recipes are not allowlisted; they must cite ~/revealfleet.
-.gitleaks.issues.toml                   lit-username,abs-home-path,private-jv-repo,private-jv-name,banned-fleet-parent
+.gitleaks.issues.toml                   lit-username,abs-home-path,private-jv-repo,private-jv-name
 
 # By-design: the fleet git rule mirrored into profiles/revealfleet must carry the
 # canonical noreply commit identity literally, so it re-propagates to the
@@ -42,3 +42,7 @@ profiles/revealui/claude/skills/revealui-safety/SKILL.md                    lts-
 # appears on every commit pushed to every public repo, so it is not a leak.
 # Consumer-facing profiles under profiles/revealui/ use a placeholder instead.
 profiles/revealfleet/claude/rules/git.md   lit-username
+
+# Synthetic negative input proves the removed profile is rejected.
+# This fixture defines no supported alias or operating path.
+test/run-tests.sh                      banned-fleet-parent,private-jv-repo
