@@ -102,6 +102,12 @@ for entry in "${PATTERNS[@]}"; do
   pattern="${rest%%|*}"
   reason="${rest#*|}"
 
+  scan_output="$(grep -rFIn "${grep_excludes[@]}" -- "$pattern" "${SCAN_PATHS[@]}" 2>/dev/null)"
+  scan_status=$?
+  if (( scan_status > 1 )); then
+    echo "[client-leak] error: grep could not complete the requested scan" >&2
+    exit 2
+  fi
   while IFS= read -r hit; do
     [[ -z "$hit" ]] && continue
     file="${hit%%:*}"
@@ -126,7 +132,7 @@ for entry in "${PATTERNS[@]}"; do
       printf '[CLIENT-LEAK:%s] %s:%s — %s\n  → %s\n' "$tag" "$file" "$line" "$reason" "$content"
     fi
     violations=$((violations+1))
-  done < <(grep -rFIn "${grep_excludes[@]}" -- "$pattern" "${SCAN_PATHS[@]}" 2>/dev/null || true)
+  done <<< "$scan_output"
 done
 
 if [[ -n "${LEAK_JSON:-}" ]]; then
