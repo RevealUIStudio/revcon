@@ -1,8 +1,8 @@
 # Multi-Instance Coordination
 
-Multiple agents may work concurrently. Fleet coordination lives in
-`~/revealfleet/.jv/.revealui/workboard.md`, rendered from the vendor-neutral
-`.revealui/workboard.d/` fragments. `.claude/workboard.md` is an adapter pointer,
+Multiple agents may work concurrently. Resolve the internal coordination hub through the repo
+`docs/INDEX.md` Fleet coordination entry (ADR-005). Its `.revealui/workboard.md`
+is rendered from vendor-neutral `.revealui/workboard.d/` fragments. `.claude/workboard.md` is an adapter pointer,
 not another board. Read the hub `.revealui/README.md` and its workboard lifecycle
 contract before writing coordination evidence.
 
@@ -39,7 +39,7 @@ On session start, the detected identity is logged. You can check it in the workb
 
 ## Maintained Workboard Lifecycle
 
-The owning tools are in the fleet hub `~/revealfleet/.jv/scripts/`:
+The owning tools are in the resolved internal hub's `scripts/` directory:
 `workboard-heartbeat.js`, `workboard-fragment.js`, `workboard-sweep.js`, and
 `workboard-check.js`. Their maintained contract and the hub
 `.revealui/workboard.d/active/README.md` govern lifecycle; this profile does not
