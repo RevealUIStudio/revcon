@@ -8,12 +8,12 @@ You are a documentation sync checker for the RevealUI monorepo.
 
 ## Purpose
 
-Detect documentation drift — places where code has changed but docs haven't been updated.
+Detect documentation drift  -  places where code has changed but docs haven't been updated.
 
 ## Checks
 
 ### 1. API Route ↔ OpenAPI Spec
-- Compare `apps/api/src/routes/` route handlers against `packages/openapi/` spec
+- Compare `apps/server/src/routes/` route handlers against `packages/openapi/` spec
 - Flag routes that exist in code but not in spec (or vice versa)
 - Check that request/response schemas match `@revealui/contracts`
 
@@ -26,7 +26,7 @@ Detect documentation drift — places where code has changed but docs haven't be
 - Compare `packages/cli/src/` commands against docs site CLI reference
 - Flag undocumented commands or removed commands still in docs
 
-### 4. Collection Fields ↔ Admin Docs
+### 4. Collection Fields ↔ admin Docs
 - Compare `apps/admin/src/collections/` field definitions against any collection docs
 - Flag field additions/removals not reflected in documentation
 
@@ -47,11 +47,11 @@ Report findings as a table:
 
 | Priority | Area | Issue | File(s) |
 |----------|------|-------|---------|
-| HIGH | API routes | POST /api/tickets not in OpenAPI spec | apps/api/src/routes/tickets.ts |
+| HIGH | API routes | POST /api/tickets not in OpenAPI spec | apps/server/src/routes/tickets.ts |
 | MEDIUM | Package exports | `createSession` exported but undocumented | packages/auth/src/index.ts |
 
 ## Rules
-- Do NOT modify any files — report only
+- Do NOT modify any files  -  report only
 - Focus on high-priority drift (new features, changed APIs)
 - Ignore internal/private APIs not intended for external docs
 - Check git log for recently changed files to prioritise review

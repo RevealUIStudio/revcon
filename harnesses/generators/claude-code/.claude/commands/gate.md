@@ -1,5 +1,5 @@
 ---
-description: Run the full CI gate (Biome lint, typecheck, Vitest, turbo build) before pushing. Only invoke when explicitly asked to run the gate or verify before a push.
+description: "Run the full CI gate (Biome lint, typecheck, Vitest, turbo build) before pushing. Only invoke when explicitly asked to run the gate or verify before a push."
 disable-model-invocation: true
 ---
 
@@ -11,6 +11,6 @@ Execute `pnpm gate` in the RevealUI monorepo root. This runs the full CI pipelin
 3. Vitest test suite
 4. Turbo build
 
-If the full gate takes too long, run `pnpm gate:quick` for phase 1 only (lint + typecheck).
+If the full gate takes too long, run `pnpm gate:quick` for phase 1 quality checks only.
 
 Report any failures with the specific package and error details.

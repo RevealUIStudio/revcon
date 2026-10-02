@@ -1,15 +1,15 @@
 # Database Migration Workflow
 
-Guide for creating and applying Drizzle ORM migrations against the RevealUI single Neon-primary PostgreSQL database.
+Guide for creating and reviewing Drizzle ORM migrations through the single Neon-primary PostgreSQL store. Apply migrations only within the authorized development/release workflow.
 
 ## Pre-Flight Checks
 
 Before creating a migration:
 
-1. **Identify the schema area** (all on the single Neon database):
-   - **REST tables**: users, sessions, collections, products, orders, licenses, pages, sites, tickets, agents, api-keys, GDPR
-   - **Vector tables** (pgvector): embeddings, agent memory, RAG
-   - If unsure, check `packages/db/src/schema/rest.ts` (REST tables) vs `packages/db/src/schema/vector.ts` (pgvector tables) — both on the same Neon database
+1. **Use the owning persistence boundary**:
+   - All application persistence goes through `@revealui/db` and its Drizzle schema, including sessions and pgvector data
+   - Inspect the current exports in `packages/db/src/schema/`; vector tables use the same PostgreSQL client
+   - Do not introduce a second database, vector/auth SDK, or Supabase runtime client
 
 2. **Check existing schema** for conflicts:
    ```bash
@@ -20,7 +20,7 @@ Before creating a migration:
    grep -r "export const.*pgTable" packages/db/src/schema/
    ```
 
-3. **Verify contracts alignment** — new tables/columns should have corresponding Zod schemas:
+3. **Verify contracts alignment**  -  new tables/columns should have corresponding Zod schemas:
    ```bash
    ls packages/contracts/src/
    ```
@@ -43,7 +43,7 @@ cd packages/db
 pnpm drizzle-kit generate
 ```
 
-Review the generated SQL in `packages/db/drizzle/` — check for:
+Review the generated SQL in `packages/db/drizzle/`  -  check for:
 - Destructive changes (DROP TABLE, DROP COLUMN)
 - Data loss risks (column type changes without USING clause)
 - Missing indexes on foreign keys
@@ -51,11 +51,11 @@ Review the generated SQL in `packages/db/drizzle/` — check for:
 ### Step 3: Apply Migration (Development Only)
 
 ```bash
-# Development database ONLY — never production
+# Development database ONLY  -  never production
 pnpm db:migrate
 ```
 
-**NEVER run `drizzle-kit push`** — always use `drizzle-kit migrate` (the PreToolUse hook blocks `push`).
+**NEVER run `drizzle-kit push`**  -  always use `drizzle-kit migrate` (the PreToolUse hook blocks `push`).
 
 ### Step 4: Verify
 
@@ -79,15 +79,14 @@ If you added new tables or columns that are exposed via the API:
 2. Export from `packages/contracts/src/index.ts`
 3. Update any API routes that use the new schema
 
-## Schema-Area Guidance
+## Persistence Boundary
 
-| If your change touches... | Put it in... | Client |
-|---------------------------|-------------|--------|
-| Content, users, sessions, products, orders | `packages/db/src/schema/` (NeonDB barrel) | Drizzle ORM |
-| Vector embeddings, AI memory | `packages/db/src/schema/vector.ts` (pgvector) | Drizzle / Neon |
-| Session auth | `packages/db/src/schema/users.ts` | Drizzle / Neon |
+| If your change touches... | Owning schema | Client |
+|---------------------------|---------------|--------|
+| Content, users, sessions, products, orders | `packages/db/src/schema/` | `@revealui/db` Drizzle client |
+| Vector embeddings, AI memory | `packages/db/src/schema/vector.ts` | The same `@revealui/db` Drizzle client |
 
-**All tables live on the single Neon database** — there is no second DB client to mix.
+Auth/session behavior belongs to `packages/auth/` and uses the owning database boundary. Extend that primitive instead of creating a parallel store or auth client.
 
 ## Rollback
 

@@ -6,6 +6,6 @@ Execute `pnpm gate` in the RevealUI monorepo root. This runs the full CI pipelin
 3. Vitest test suite
 4. Turbo build
 
-If the full gate takes too long, run `pnpm gate:quick` for phase 1 only (lint + typecheck).
+If the full gate takes too long, run `pnpm gate:quick` for phase 1 quality checks only.
 
 Report any failures with the specific package and error details.
