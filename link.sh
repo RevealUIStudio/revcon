@@ -2,13 +2,14 @@
 # link.sh — Symlink editor configs into a target project.
 #
 # Usage:
-#   ./link.sh --target ~/revealfleet/revealui --profile revealui
-#   ./link.sh --target ~/revealfleet/revealui --profile revealfleet --profile revealui
-#   ./link.sh --target ~/revealfleet/revforge                    # base only
+#   ./link.sh --target ~/revealfleet/revealui --profile revealfleet
+#   ./link.sh --target ~/revealfleet/revealui --profile revealfleet --profile revealui --editor all
+#   ./link.sh --target ~/revealfleet/revforge --editor all       # all adapters, base only
 #   ./link.sh --target ~/revealfleet/revealui --editor zed         # zed only
 #   ./link.sh --list                                            # show available profiles
 #
-# Creates real directories (.zed/, .cursor/, .claude/, .agents/) in the target,
+# Starts with .revealui/content/ only; vendor adapters require --editor NAME
+# or explicit --editor all. Creates real directories in the target,
 # then symlinks individual config files from base/ and optionally one or more
 # profile overlays. --profile is repeatable; profiles are applied in the order
 # given, and later profiles override earlier ones on filename collisions
@@ -27,7 +28,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 TARGET=""
 PROFILES=()
-EDITOR="all"
+EDITOR="revealui"
 MODE="symlink"
 DRY_RUN=false
 SKIP_EDITORS="${REVCON_SKIP_EDITORS:-}"
@@ -41,7 +42,7 @@ Options:
   --target DIR     Project directory to link into (required)
   --profile NAME   Profile overlay (repeatable; later wins on collision)
                    Examples: revealfleet, revealui, revforge
-  --editor NAME    Editor to link: revealui, cursor, zed, vscode, claude, agents, all (default: all)
+  --editor NAME    Editor to link: revealui, cursor, zed, vscode, claude, agents, all (default: revealui)
   --mode NAME      Distribution mode: symlink (default) or copy. Copy mode
                    materializes real files so the target repo can git-track
                    them, writes <dot_dir>/.revcon-manifest.json (per-file
@@ -57,8 +58,8 @@ Environment variables:
                               private profiles take precedence over in-repo ones.
 
 Examples:
-  ./link.sh --target ~/revealfleet/revealui --profile revealui
-  ./link.sh --target ~/revealfleet/revealui --profile revealfleet --profile revealui
+  ./link.sh --target ~/revealfleet/revealui --profile revealfleet
+  ./link.sh --target ~/revealfleet/revealui --profile revealfleet --profile revealui --editor all
   ./link.sh --target ~/revealfleet/revforge --profile revealfleet
   ./link.sh --target ~/revealfleet/foo --editor zed
   ./link.sh --dry-run --target ~/revealfleet/foo --profile revealfleet

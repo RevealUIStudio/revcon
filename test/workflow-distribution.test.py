@@ -34,8 +34,8 @@ class Workflows(unittest.TestCase):
         return self.run_script('link.sh', '--profile', 'one', *args, ok=ok)
 
     def test_all_adapters_symlink_status_idempotence_unlink(self):
-        self.link()
-        self.link()
+        self.link('--editor','all')
+        self.link('--editor','all')
         status = json.loads(self.run_script('status.sh', '--json').stdout)
         for editor in ('cursor', 'zed', 'vscode', 'claude', 'agents'):
             dst = self.target / f'.{editor}/workflows/WORKFLOWS.md'
@@ -77,7 +77,7 @@ class Workflows(unittest.TestCase):
         self.assertEqual((self.target/'.cursor/workflows/WORKFLOWS.md').resolve(),self.source)
         overlay = self.repo/'profiles/one/cursor/workflows/WORKFLOWS.md'
         overlay.parent.mkdir(parents=True); overlay.write_text('adapter overlay')
-        self.link('--skip','zed')
+        self.link('--editor','all','--skip','zed')
         self.assertEqual((self.target/'.cursor/workflows/WORKFLOWS.md').resolve(),overlay)
         self.assertFalse((self.target/'.zed').exists())
         later = self.repo/'profiles/two/workflows/WORKFLOWS.md'
@@ -129,7 +129,7 @@ class Workflows(unittest.TestCase):
         self.assertEqual(dst.resolve(),outside)
 
     def test_all_adapters_copy_gate_and_unlink(self):
-        self.link('--mode','copy')
+        self.link('--editor','all','--mode','copy')
         for editor in ('cursor','zed','vscode','claude','agents'):
             dst = self.target/f'.{editor}/workflows/WORKFLOWS.md'
             self.assertFalse(dst.is_symlink())
@@ -142,7 +142,7 @@ class Workflows(unittest.TestCase):
             self.assertFalse((self.target/f'.{editor}/workflows/WORKFLOWS.md').exists())
 
     def test_dry_run_does_not_materialize_workflows(self):
-        self.link('--mode','copy','--dry-run')
+        self.link('--editor','all','--mode','copy','--dry-run')
         self.assertEqual(list(self.target.iterdir()),[])
 
 if __name__ == '__main__':

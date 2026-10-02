@@ -91,7 +91,7 @@ test_symlink_link_creates_expected_links() {
   mkdir -p "$target"
 
   local out
-  if ! out="$(run_script link.sh --target "$target" --profile testprofile 2>&1)"; then
+  if ! out="$(run_script link.sh --target "$target" --profile testprofile --editor all 2>&1)"; then
     fail "$name (link.sh exited non-zero: $out)"
     return
   fi
@@ -188,7 +188,7 @@ test_unlink_scoped_removal() {
   echo "not managed by revcon" > "$target/.zed/local-notes.txt"
 
   local out
-  if ! out="$(run_script link.sh --target "$target" --profile testprofile 2>&1)"; then
+  if ! out="$(run_script link.sh --target "$target" --profile testprofile --editor all 2>&1)"; then
     fail "$name (link.sh exited non-zero: $out)"
     return
   fi
@@ -434,7 +434,7 @@ test_link_idempotent_symlink_mode() {
   mkdir -p "$target"
 
   local out1
-  if ! out1="$(run_script link.sh --target "$target" --profile testprofile 2>&1)"; then
+  if ! out1="$(run_script link.sh --target "$target" --profile testprofile --editor all 2>&1)"; then
     fail "$name (first run failed: $out1)"
     return
   fi
@@ -443,7 +443,7 @@ test_link_idempotent_symlink_mode() {
   before="$(find "$target" -type l | sort | while IFS= read -r l; do printf '%s -> %s\n' "$l" "$(readlink "$l")"; done)"
 
   local out2
-  if ! out2="$(run_script link.sh --target "$target" --profile testprofile 2>&1)"; then
+  if ! out2="$(run_script link.sh --target "$target" --profile testprofile --editor all 2>&1)"; then
     fail "$name (second run failed: $out2)"
     return
   fi
@@ -519,14 +519,14 @@ test_private_scanner_accepts_public_author_identity() {
 }
 
 test_native_policy_distribution() {
-  local name="native policy copy, provenance, status, drift, idempotence and safe unlink"
+  local name="default native-only policy copy, provenance, status, drift, idempotence and safe unlink"
   setup_fixture_repo
   mkdir -p "$FIXTURE_REVCON/profiles/revealfleet/revealui/rules"
   echo 'native fleet policy' > "$FIXTURE_REVCON/profiles/revealfleet/revealui/rules/policy.md"
   local target="$TMP_ROOT/native-policy" ok=true out before after
   mkdir -p "$target"
-  run_script link.sh --target "$target" --profile revealfleet --editor revealui --mode copy >/dev/null 2>&1 || ok=false
-  [[ -f "$target/.revealui/content/rules/policy.md" && ! -e "$target/.claude" ]] || ok=false
+  run_script link.sh --target "$target" --profile revealfleet --mode copy >/dev/null 2>&1 || ok=false
+  [[ -f "$target/.revealui/content/rules/policy.md" && ! -e "$target/.claude" && ! -e "$target/.cursor" && ! -e "$target/.zed" && ! -e "$target/.agents" && ! -e "$target/.vscode" ]] || ok=false
   local manifest="$target/.revealui/.revcon-manifest.json"
   jq -e '.editor == "revealui" and .files["content/rules/policy.md"].source == "profiles/revealfleet/revealui/rules/policy.md"' "$manifest" >/dev/null || ok=false
   before="$(cat "$manifest")"
