@@ -20,5 +20,5 @@ Run `pnpm install` first to establish symlinks in this worktree.
 - Report findings with severity (critical/high/medium/low), file path, and line number
 - Do NOT modify source code — only audit and report
 - Check for OWASP Top 10 patterns: injection, broken auth, sensitive data exposure, etc.
-- Verify that Pro features use `checkAIFeatureGate()`, not `isFeatureEnabled('aiLocal')`
+- Verify capability-specific access through the current owning entitlement middleware; paid Pro features and Free local AI have different grants, and denied or unestablished authority must fail closed
 - Confirm error responses don't leak stack traces or internal details

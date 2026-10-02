@@ -8,7 +8,7 @@ Follow these conventions for ALL code in the RevealUI monorepo.
 - Use ES Modules (`import`/`export`), never CommonJS (`require`)
 - Prefer `interface` over `type` for object shapes (unless union/intersection needed)
 - Use explicit return types on exported functions
-- Avoid `any` — use `unknown` and narrow with type guards
+- Avoid `any`  -  use `unknown` and narrow with type guards
 - Use `as const` for literal objects and arrays when appropriate
 - Prefer `satisfies` over `as` for type assertions when possible
 - Use optional chaining (`?.`) and nullish coalescing (`??`) over manual checks
@@ -29,14 +29,14 @@ Follow these conventions for ALL code in the RevealUI monorepo.
 - Chore: `chore/<short-description>`
 
 ### Identity
-- Commit as your own GitHub noreply address: `<ID>+<username>@users.noreply.github.com`. A signed commit only verifies when the committer email is a verified email on the account that holds the signing key.
+- Use the committer's own verified GitHub noreply identity from the supported Git configuration; do not substitute another author.
 
 ## Monorepo
 
 ### Structure
-- Apps live in `apps/` — deployable services (Next.js, Hono, Vite)
-- Packages live in `packages/` — shared libraries consumed by apps
-- Scripts live in `scripts/` — CLI tools, automation, CI gates
+- Apps live in `apps/`  -  deployable services (Next.js, Hono, Vite)
+- Packages live in `packages/`  -  shared libraries consumed by apps
+- Scripts live in `scripts/`  -  CLI tools, automation, CI gates
 
 ### Package Manager
 - pnpm 10 with workspace protocol
@@ -77,7 +77,7 @@ Follow these conventions for ALL code in the RevealUI monorepo.
 ### Publishing
 - OSS packages: `publishConfig.access: "public"`, MIT license
 - Pro packages: `"private": true` (not published to npm)
-- Use changesets for versioning: `pnpm changeset` → `pnpm changeset:version` → `pnpm changeset:publish`
+- Version with changesets (`pnpm changeset`). Publish only via GitHub Actions `release.yml` on `main` (OIDC). Never `npm login`, never a GAT/`_authToken`, never local `npm publish` / `pnpm publish`.
 
 ### Import Conventions
 - Use package names (`@revealui/core`) not relative paths between packages
@@ -89,9 +89,9 @@ Follow these conventions for ALL code in the RevealUI monorepo.
 Biome 2 is the sole linter and formatter for this monorepo.
 
 ### Commands
-- `pnpm lint` — check all files (`biome check .`)
-- `pnpm format` — format all files (`biome format --write .`)
-- `pnpm lint:fix` — auto-fix (`biome check --write .`)
+- `pnpm lint`  -  check all files (`biome check .`)
+- `pnpm format`  -  format all files (`biome format --write .`)
+- `pnpm lint:fix`  -  auto-fix (`biome check --write .`)
 
 ### Key Rules
 - No unused variables or imports (auto-removed on format)
@@ -105,7 +105,7 @@ Biome 2 is the sole linter and formatter for this monorepo.
 
 ### Suppressing Rules
 - Use `// biome-ignore <rule>: <reason>` for specific lines
-- Avoid blanket suppressions — prefer fixing the code
+- Avoid blanket suppressions  -  prefer fixing the code
 - Document why a suppression is needed
 
 ## Tailwind v4
@@ -133,28 +133,28 @@ RevealUI uses **Tailwind CSS v4** (`^4.1.18`). Key syntax changes from v3:
 ```
 
 ```html
-<!-- CORRECT (v4) — parentheses for CSS vars -->
+<!-- CORRECT (v4)  -  parentheses for CSS vars -->
 <div class="bg-(--brand-color)">
 
-<!-- WRONG (v3) — square brackets -->
+<!-- WRONG (v3)  -  square brackets -->
 <div class="bg-[--brand-color]">
 ```
 
 ```html
-<!-- CORRECT (v4) — important at the end -->
+<!-- CORRECT (v4)  -  important at the end -->
 <div class="bg-red-500!">
 
-<!-- WRONG (v3) — important at the start -->
+<!-- WRONG (v3)  -  important at the start -->
 <div class="bg-!red-500">
 ```
 
 ### Rules for New Code
-1. Never use `@tailwind` directives — use `@import "tailwindcss"`
-2. Never use `@layer utilities` or `@layer components` — use `@utility`
+1. Never use `@tailwind` directives  -  use `@import "tailwindcss"`
+2. Never use `@layer utilities` or `@layer components`  -  use `@utility`
 3. Use `bg-(--var)` syntax for CSS variables, not `bg-[--var]`
 4. Important goes at the end: `bg-red-500!` not `!bg-red-500`
 5. Prefer `gap` over `space-*` / `divide-*` for spacing in flex/grid
-6. No `transform-none` — use `scale-none`, `rotate-none`, `translate-none`
+6. No `transform-none`  -  use `scale-none`, `rotate-none`, `translate-none`
 
 ## Parameterization
 
@@ -199,28 +199,25 @@ export function configureModule(overrides: Partial<ModuleConfig>): void {
 - Type discriminants and enum values
 - Schema definitions (use contracts)
 
-## Unused Declarations
+## Unused Declarations (HARDLINE every session)
 
-**NEVER suppress an unused variable/import warning without first determining if the code is incomplete.**
+**NEVER silence unused with a leading underscore** (`_line`, `_unused`) when
+the honest fix is implement, redesign the signature, or delete. Biome's
+underscore exception is not a free pass. See rule `unused-declarations`
+(preamble tier 1).
 
 ### Mandatory Decision Tree
 
 ```
-1. Stub or placeholder?
-   → IMPLEMENT the missing functionality. Do not suppress.
-
-2. Intentional side-effect resource?
-   → Rename with `_` prefix. Add a comment explaining WHY.
-
-3. Type-only import?
-   → Change to `import type { ... }`.
-
-4. Required callback parameter?
-   → Prefix with `_` (e.g. `_req`). Comment if non-obvious.
-
-5. Genuinely dead code?
-   → DELETE entirely. No grace periods.
+1. Param should drive logic? → IMPLEMENT it (empty guards count as real use).
+2. You own the API and param is unnecessary? → REMOVE from signature + call sites.
+3. Type-only import? → `import type { ... }`.
+4. Genuinely dead? → DELETE. No grace periods.
+5. Host-mandated callback arity you cannot change? → `_` only with a comment naming the host.
+6. IaC side-effect construct? → `_` only with a WHY comment.
 ```
+
+Underscore silence for incomplete work is a hardline violation.
 
 ### Verification After Any Lint Fix
 
@@ -239,7 +236,7 @@ pnpm --filter <package> test   # if you implemented a stub
 | Free | `'free'` | MIT, open source |
 | Pro | `'pro'` | Source-available, commercially licensed |
 | Max | `'max'` | Extended Pro features |
-| Enterprise | `'enterprise'` | White-label, multi-tenant, self-hosted |
+| Enterprise (Forge) | `'enterprise'` | White-label (planned), multi-tenant, self-hosted |
 
 ### Runtime Checks
 

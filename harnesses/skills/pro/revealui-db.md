@@ -1,33 +1,13 @@
 # Database Conventions
 
-## Database Architecture
+## Primary Store: NeonDB (PostgreSQL)
 
-RevealUI runs a **single Neon-primary PostgreSQL database** (Drizzle ORM), with vector data (agent memories + RAG) stored in that same database via pgvector and live sync provided by ElectricSQL:
+RevealUI uses **NeonDB as the primary store** via Drizzle ORM. The schema lives in `packages/db/src/schema/` (86 tables across accounts, users, sites, posts, agents, RAG, billing, jobs, webhooks, audit, etc.). Migrations apply via standard `drizzle-kit migrate`.
 
-| Database | Client | Purpose |
-|----------|--------|---------|
-| **Neon** (PostgreSQL) | `@neondatabase/serverless` (falls back to `node-postgres` for localhost) | All data: collections, users, sessions, orders, products, plus pgvector tables (agent memories, RAG) |
-| **ElectricSQL** | `@electric-sql` | Live read-path sync over the same Neon database |
+Legacy `@supabase/supabase-js` code has been phased out from runtime — zero real `from '@supabase/supabase-js'` imports remain in `packages/` or `apps/`. **New features must not introduce a Supabase dependency.**
 
-## Boundary Rule
+## Query Patterns (Drizzle ORM on Neon)
 
-There is no second database client. All persistence goes through the single Drizzle/Neon client (`@revealui/db`); vector data lives in pgvector on the same Neon database, so there is no separate vector/auth client to import. (A customer-facing Supabase MCP adapter exists for connecting a customer's OWN Supabase project as a selectable data source — it is never RevealUI's internal store.)
-
-## Schema Organization
-
-```
-packages/db/src/schema/
-├── collections/    # NeonDB: content collections
-├── users/          # NeonDB: user management
-├── commerce/       # NeonDB: products, orders, pricing
-├── sessions/       # NeonDB: auth sessions
-├── vector/         # Neon (pgvector): embeddings, similarity search
-└── auth/           # Neon: session-based auth (no separate auth store)
-```
-
-## Query Patterns
-
-### NeonDB (Drizzle ORM)
 ```ts
 import { db } from '@revealui/db'
 import { posts } from '@revealui/db/schema'
@@ -35,28 +15,25 @@ import { posts } from '@revealui/db/schema'
 const results = await db.select().from(posts).where(eq(posts.status, 'published'))
 ```
 
-### Vector queries (pgvector on Neon)
-```ts
-// Vector tables live on the same Neon database (pgvector)
-import { db } from '@revealui/db'
-import { agentMemories } from '@revealui/db/schema'
+## Vector / Embedding Storage
 
-const results = await db.select().from(agentMemories).orderBy(cosineDistance(agentMemories.embedding, queryEmbedding)).limit(5)
-```
+Vector embeddings (RAG, AI memory) live in NeonDB on the `pgvector` extension. HNSW indexes are created in `0002_triggers_search_vectors.sql`. Schemas: `rag_documents`, `rag_chunks`, `agent_memories.embedding`.
 
-## Enforcement
+## Database MCP
 
-The `pnpm validate:structure` script checks package/import-boundary conventions.
-CI runs this as part of phase 1 (warn-only — violations are flagged but don't block builds).
+Agent database tooling uses the Neon MCP launcher (`launchNeonMcp`). The legacy customer Supabase MCP adapter was removed; do not reintroduce `supabase-mcp` or `@supabase/supabase-js` as runtime dependencies.
 
-To check locally:
-```bash
-pnpm validate:structure
-```
+Application persistence goes through `@revealui/db`. Extend its owning database client and schema; do not introduce parallel persistence clients or stores.
 
-## Migration Guidance
+## Migration Discipline
 
-When adding new features:
-1. **Content/REST data** → add to `packages/db/src/schema/` + use Drizzle
-2. **AI/vector data** → add to `packages/db/src/schema/vector.ts` (pgvector on the same Neon database) + use Drizzle
-3. There is a single DB client — no cross-client mixing concern
+See `packages/db/docs/migrations-discipline.md`. `pnpm validate:migrations` enforces journal/snapshot/idempotency invariants.
+
+## Schema Change Workflow
+
+1. Add or modify schema in `packages/db/src/schema/`
+2. Run `pnpm --filter @revealui/db db:generate` (drizzle-kit will produce the SQL + snapshot)
+3. Review the generated SQL — wrap any `ADD CONSTRAINT` in `DO $$ BEGIN ... END $$` for idempotency
+4. Apply locally via `pnpm --filter @revealui/db db:migrate` (requires `POSTGRES_URL`)
+5. Run `pnpm --filter @revealui/db test` to confirm nothing regressed
+6. Commit migration + snapshot together
