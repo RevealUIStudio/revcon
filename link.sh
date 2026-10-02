@@ -289,6 +289,10 @@ link_editor() {
   done
 
   if ! $has_base && ! $has_any_profile; then
+    if [[ "$editor" == "revealui" && "$EDITOR" != "all" ]]; then
+      echo "Error: no native RevealUI content for selected profiles; provide maintained base/revealui or profiles/<profile>/revealui content. Vendor projections require explicit --editor NAME." >&2
+      exit 1
+    fi
     return
   fi
 
@@ -298,14 +302,9 @@ link_editor() {
     echo "Error: unsafe native policy manifest destination" >&2; exit 1
   fi
 
-  # Create real directory (not symlink) so editor state stays local
-  if ! $DRY_RUN; then
-    mkdir -p "$target_dir"
-  fi
-
   # Collect all source files: base first, then each profile in order.
   # Use an associative array to deduplicate (later overlay wins).
-  declare -A file_map
+  declare -A file_map=()
 
   if $has_base; then
     while IFS= read -r -d '' file; do
@@ -358,6 +357,14 @@ link_editor() {
         file_map["$rel"]="$file"
       done < <(find "$native_src" \( -type f -o -type l \) -print0 | sort -z)
     done
+  fi
+
+  if [[ "$editor" == "revealui" && ${#file_map[@]} -eq 0 ]]; then
+    if [[ "$EDITOR" != "all" ]]; then
+      echo "Error: no native RevealUI content files for selected profiles; empty native directories cannot materialize policy." >&2
+      exit 1
+    fi
+    return
   fi
 
   # Native policy and its projections must not traverse a destination symlink.
@@ -424,6 +431,11 @@ link_editor() {
       fi
     fi
   done
+
+  # Create real directory only after source and destination admission.
+  if ! $DRY_RUN; then
+    mkdir -p "$target_dir"
+  fi
 
   # Create subdirectories and symlink files
   while IFS= read -r -d '' rel; do

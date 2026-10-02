@@ -182,6 +182,12 @@ private dir as well, and `status.sh` reports them as `private:<rel-path>` source
 | Zed | `.zed/` | Full support |
 | VS Code | `.vscode/` | Placeholder |
 
+A selected native editor fails clearly when no native files exist, including
+empty profile directories; it never falls back to Claude sources. The product
+`revealui` profile currently contains vendor overlays, so use the native
+`revealfleet` profile for fleet policy and the maintained `revealui-harnesses`
+manager for product definitions. Request vendor overlays explicitly.
+
 `--editor revealui` is the default and writes native content from
 `profiles/<profile>/revealui/`. Vendor adapters require explicit `--editor NAME`
 or `--editor all`. Claude projects native content into `.claude/`; native sources

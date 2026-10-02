@@ -518,6 +518,23 @@ test_private_scanner_accepts_public_author_identity() {
   fi
 }
 
+test_native_policy_requires_content() {
+  local name="native selection rejects absent and empty sources before target mutation"
+  setup_fixture_repo
+  local target="$TMP_ROOT/native-empty" out ok=true selection
+  mkdir -p "$target"
+  for selection in default explicit empty; do
+    local args=()
+    [[ "$selection" == default ]] || args=(--editor revealui)
+    [[ "$selection" != empty ]] || mkdir -p "$FIXTURE_REVCON/profiles/testprofile/revealui/rules"
+    if out="$(run_script link.sh --target "$target" --profile testprofile "${args[@]}" --mode copy 2>&1)"; then ok=false; fi
+    [[ "$out" == *"no native RevealUI content"* && ! -e "$target/.revealui" && ! -e "$target/.claude" && ! -e "$target/.gitignore" ]] || ok=false
+  done
+  run_script link.sh --target "$target" --profile testprofile --editor all --mode copy >/dev/null 2>&1 || ok=false
+  [[ -f "$target/.claude/agents/example.md" || -d "$target/.claude" ]] || ok=false
+  $ok && pass "$name" || fail "$name"
+}
+
 test_native_policy_distribution() {
   local name="default native-only policy copy, provenance, status, drift, idempotence and safe unlink"
   setup_fixture_repo
@@ -634,6 +651,7 @@ test_native_policy_symlink_safety() {
 
 # Run all scenarios
 # ---------------------------------------------------------------------------
+test_native_policy_requires_content
 test_native_policy_distribution
 test_native_policy_manifest_admission
 test_native_policy_real_profile
