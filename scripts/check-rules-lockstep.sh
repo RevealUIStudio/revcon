@@ -6,7 +6,7 @@
 #
 # Canonical sources (edit here only):
 #   profiles/revealui/claude/rules/<name>.md
-#   profiles/revealfleet/claude/rules/<name>.md
+#   profiles/revealfleet/revealui/rules/<name>.md
 #
 # Lockstep surfaces (must match a canonical source when the same basename is
 # present):
@@ -32,11 +32,11 @@
 # Usage:
 #   bash scripts/check-rules-lockstep.sh
 #
-# To check the canonical (~/.claude/rules) vs this repo's profile copies
+# To inventory the optional Claude projection against maintained profile sources
 # (a different, cross-repo comparison that CANNOT be run in CI here — the
 # canonical source lives outside this repo): from a fleet dev machine, run
 #   diff <(ls ~/.claude/rules/*.md | xargs -n1 basename) \
-#        <(ls ~/revealfleet/revcon/profiles/{revealui,revealfleet}/claude/rules/*.md 2>/dev/null | xargs -n1 basename | sort -u)
+#        <(ls ~/revealfleet/revcon/profiles/revealui/claude/rules/*.md ~/revealfleet/revcon/profiles/revealfleet/revealui/rules/*.md 2>/dev/null | xargs -n1 basename | sort -u)
 # The durable home for that cross-repo check is the control-layer content
 # pipeline (GAP-421's content-materialization channel), not a second
 # hand-rolled sync script here.
@@ -46,7 +46,7 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CANON_ROOTS=(
   "$REPO_ROOT/profiles/revealui/claude/rules"
-  "$REPO_ROOT/profiles/revealfleet/claude/rules"
+  "$REPO_ROOT/profiles/revealfleet/revealui/rules"
 )
 SURFACE_ROOTS=(
   "$REPO_ROOT/harnesses/rules/pro"

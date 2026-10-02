@@ -25,7 +25,7 @@ set -euo pipefail
 
 TARGET=""
 DOT=".claude"
-MATERIALIZED_SUBDIRS=(rules agents skills)
+MATERIALIZED_SUBDIRS=(rules agents skills commands)
 
 usage() {
   cat <<'EOF'
@@ -58,6 +58,7 @@ if [[ ! -d "$TARGET" ]]; then
   exit 2
 fi
 
+[[ "$DOT" == ".revealui" ]] && MATERIALIZED_SUBDIRS=(content/rules content/agents content/skills content/commands)
 TARGET="$(cd "$TARGET" && pwd)"
 MANIFEST="$TARGET/$DOT/.revcon-manifest.json"
 
@@ -84,8 +85,26 @@ if ! jq -e '.files | type == "object"' "$MANIFEST" >/dev/null 2>&1; then
   exit 1
 fi
 
+# Native manifests describe only first-party content, never vendor aliases or
+# arbitrary paths. Validate before any file reads or hash comparisons.
+if [[ "$DOT" == ".revealui" ]]; then
+  if ! jq -se '
+    length == 1 and (.[0].editor == "revealui") and
+    all(.[0].files | to_entries[];
+      (.key | startswith("content/rules/") or startswith("content/agents/") or
+        startswith("content/skills/") or startswith("content/commands/")) and
+      (.key | split("/") | all(.[]; length > 0 and . != "." and . != "..")) and
+      (.key | test("[[:cntrl:]]") | not) and
+      (.value.source | type == "string" and contains("/revealui/")) and
+      (.value.sha256 | type == "string" and test("^[0-9a-f]{64}$")))
+  ' "$MANIFEST" >/dev/null 2>&1; then
+    echo "✗ invalid first-party RevealUI manifest" >&2
+    exit 1
+  fi
+fi
+
 hash_file() {
-  sha256sum "$1" | awk '{print $1}'
+  sha256sum < "$1" | awk '{print $1}'
 }
 
 problems=0

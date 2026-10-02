@@ -7,17 +7,17 @@ target repos.
 ## Quick Start
 
 ```bash
-# Link into a project with a profile
-./link.sh --target ~/revealfleet/revealui --profile revealui
+# Link first-party fleet policy only (default editor: revealui)
+./link.sh --target ~/revealfleet/revealui --profile revealfleet
 
-# Link base configs only (no profile)
-./link.sh --target ~/revealfleet/revforge
+# Explicitly opt into all adapters, base configs only (no profile)
+./link.sh --target ~/revealfleet/revforge --editor all
 
 # Link a single editor
 ./link.sh --target ~/revealfleet/revealui --profile revealui --editor zed
 
 # Preview without changes
-./link.sh --dry-run --target ~/revealfleet/revealui --profile revealui
+./link.sh --dry-run --target ~/revealfleet/revealui --profile revealfleet
 
 # Remove symlinks
 ./unlink.sh --target ~/revealfleet/revealui
@@ -133,13 +133,15 @@ mkdir -p profiles/revforge/cursor profiles/revforge/zed
 
 The product ships configs for every supported editor. To skip editors you don't
 personally use, or to layer in a private profile that never enters this repo, two
-additive mechanisms are available — defaults are unchanged.
+supported configuration mechanisms are available. Linking defaults to first-party
+`.revealui`; use `--editor all` to opt into every adapter. Status and unlink
+default to inspecting all managed trees, including existing vendor projections.
 
 ### Skip editors
 
 ```bash
 # Per-invocation
-./link.sh --target ~/revealfleet/foo --profile revealui --skip cursor
+./link.sh --target ~/revealfleet/foo --profile revealui --editor all --skip cursor
 
 # Default for your machine — set in ~/.bashrc / ~/.zshrc
 export REVCON_SKIP_EDITORS=cursor
@@ -162,7 +164,7 @@ mkdir -p ~/private/revcon-profiles/joshua/{zed,claude}
 # Drop your proprietary configs (rules, MCP servers, custom commands) under that tree.
 # Same layout as profiles/<name>/<editor>/.
 
-./link.sh --target ~/revealfleet/foo --profile joshua
+./link.sh --target ~/revealfleet/foo --profile joshua --editor all
 # Resolves to ~/private/revcon-profiles/joshua/, NOT this repo.
 ```
 
@@ -174,17 +176,25 @@ private dir as well, and `status.sh` reports them as `private:<rel-path>` source
 
 | Editor | Dot-dir | Status |
 |--------|---------|--------|
+| RevealUI | `.revealui/content/` | First-party default |
+| Claude | `.claude/` | Optional third-party projection |
 | Cursor | `.cursor/` | Full support |
 | Zed | `.zed/` | Full support |
 | VS Code | `.vscode/` | Placeholder |
 
-Besides `cursor`, `zed`, `vscode`, and `all`, `--editor` also accepts `claude`
-and `agents`. These link content from `base/<editor>/` and
-`profiles/<profile>/<editor>/`, same as every other editor. `claude` writes
-`.claude/` from `profiles/<profile>/claude/{agents,rules,skills}`; `agents`
-writes `.agents/` from `profiles/<profile>/agents/`. Neither one links
-`harnesses/*`. That content ships separately via the `revealui-harnesses`
-CLI. See [Harnesses Content](#harnesses-content).
+A selected native editor fails clearly when no native files exist, including
+empty profile directories; it never falls back to Claude sources. The product
+`revealui` profile currently contains vendor overlays, so use the native
+`revealfleet` profile for fleet policy and the maintained `revealui-harnesses`
+manager for product definitions. Request vendor overlays explicitly.
+
+`--editor revealui` is the default and writes native content from
+`profiles/<profile>/revealui/`. Vendor adapters require explicit `--editor NAME`
+or `--editor all`. Claude projects native content into `.claude/`; native sources
+win same-path collisions and unique explicit Claude-only overlays remain.
+Other adapters use `base/<editor>/` and `profiles/<profile>/<editor>/`;
+`agents` writes `.agents/`. These do not link `harnesses/*`, which ships
+separately via the `revealui-harnesses` CLI. See [Harnesses Content](#harnesses-content).
 
 ## Harnesses Content
 
@@ -260,3 +270,20 @@ Copy manifests record the shared canonical source; existing status verification,
 copy lockstep and confined unlink operate on these entries normally. Unlink
 keeps modified copies. Use the normal unlink lifecycle before switching a workflow copy installation
 to symlink mode; this prevents a stale copy manifest from masking link status.
+
+### First-party fleet policy
+
+Fleet policy is owned in `profiles/revealfleet/revealui/rules/`. Materialize
+first-party policy without vendor output:
+
+```bash
+./link.sh --target /path/to/project --profile revealfleet --editor revealui --mode copy
+./status.sh --target /path/to/project --editor revealui --verify
+```
+
+This writes `.revealui/content/rules/` and `.revealui/.revcon-manifest.json`
+with `content/rules/...` keys and native profile source hashes. Claude is an
+optional third-party projection requested with `--editor claude`; native
+policy wins collisions while unique Claude-only profile files are retained.
+Do not hand-copy or edit installed policy. Edit its owning profile and use
+the maintained materializer.

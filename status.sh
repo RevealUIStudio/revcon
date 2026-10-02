@@ -28,7 +28,7 @@ Usage: status.sh [OPTIONS]
 
 Options:
   --target DIR     Check a specific project directory (default: scan sibling projects)
-  --editor NAME    Filter to editor: cursor, zed, vscode, claude, agents (default: all)
+  --editor NAME    Filter to editor: revealui, cursor, zed, vscode, claude, agents (default: all)
   --skip NAME      Skip a specific editor (repeatable, comma-separated also works)
   --json           Machine-readable JSON output
   --verify         Exit 1 if any copy-mode materialization has drift (GAP-372).
@@ -104,6 +104,7 @@ is_revcon_link() {
 
 # Map editor names to their dot-directories in the target
 declare -A EDITOR_DIRS=(
+  [revealui]=".revealui"
   [cursor]=".cursor"
   [zed]=".zed"
   [vscode]=".vscode"
@@ -114,7 +115,7 @@ declare -A EDITOR_DIRS=(
 # Build list of editors to check
 EDITORS=()
 if [[ "$EDITOR" == "all" ]]; then
-  for e in cursor zed vscode claude agents; do
+  for e in revealui cursor zed vscode claude agents; do
     should_skip_editor "$e" && continue
     EDITORS+=("$e")
   done
@@ -307,7 +308,9 @@ process_target() {
           ((m_total++)) || true
           local fpath="$target_dir/$rel"
           local state="ok"
-          if [[ ! -f "$fpath" ]]; then
+          if [[ -L "$fpath" ]]; then
+            state="symlink"
+          elif [[ ! -f "$fpath" ]]; then
             state="missing"
           else
             local have_hash

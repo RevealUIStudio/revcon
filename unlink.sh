@@ -25,7 +25,7 @@ Usage: unlink.sh [OPTIONS]
 
 Options:
   --target DIR     Project directory to unlink from (required)
-  --editor NAME    Editor to unlink: cursor, zed, vscode, claude, agents, all (default: all)
+  --editor NAME    Editor to unlink: revealui, cursor, zed, vscode, claude, agents, all (default: all)
   --skip NAME      Skip a specific editor (repeatable, comma-separated also works)
   --dry-run        Show what would be done without making changes
   -h, --help       Show this help
@@ -74,6 +74,7 @@ fi
 TARGET="$(realpath "$TARGET")"
 
 declare -A EDITOR_DIRS=(
+  [revealui]=".revealui"
   [cursor]=".cursor"
   [zed]=".zed"
   [vscode]=".vscode"
@@ -90,6 +91,30 @@ unlink_editor() {
 
   if [[ ! -d "$target_dir" ]]; then
     return
+  fi
+
+  if [[ "$editor" == "revealui" ]]; then
+    [[ ! -L "$target_dir" ]] || { echo "Error: unsafe native policy root" >&2; exit 1; }
+    local native_manifest="$target_dir/.revcon-manifest.json"
+    if [[ -e "$native_manifest" ]]; then
+      if [[ -L "$native_manifest" ]] || ! command -v jq >/dev/null || ! jq -se '
+        length == 1 and .[0].mode == "copy" and .[0].editor == "revealui" and
+        (.[0].files | type == "object") and
+        all(.[0].files | to_entries[];
+          (.key | startswith("content/rules/") or startswith("content/agents/") or
+            startswith("content/skills/") or startswith("content/commands/")) and
+          (.key | split("/") | all(.[]; length > 0 and . != "." and . != "..")) and
+          (.key | test("[[:cntrl:]]") | not) and
+          (.value.sha256 | type == "string" and test("^[0-9a-f]{64}$")))
+      ' "$native_manifest" >/dev/null 2>&1; then
+        echo "Error: invalid native policy manifest; preserving files" >&2; exit 1
+      fi
+      while IFS= read -r rel; do
+        local native_dst="$target_dir/$rel" resolved
+        resolved="$(realpath -m -- "$(dirname "$native_dst")")/$(basename "$native_dst")"
+        [[ "$resolved" == "$target_dir/"* ]] || { echo "Error: unsafe native policy path; preserving files" >&2; exit 1; }
+      done < <(jq -r '.files | keys[]' "$native_manifest")
+    fi
   fi
 
   echo "[$editor] scanning $target_dir"
@@ -161,7 +186,7 @@ $DRY_RUN && echo "(dry run)"
 echo ""
 
 if [[ "$EDITOR" == "all" ]]; then
-  for e in cursor zed vscode claude agents; do
+  for e in revealui cursor zed vscode claude agents; do
     if should_skip_editor "$e"; then
       echo "[$e] skipped (REVCON_SKIP_EDITORS / --skip)"
       continue

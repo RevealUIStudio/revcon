@@ -91,7 +91,7 @@ test_symlink_link_creates_expected_links() {
   mkdir -p "$target"
 
   local out
-  if ! out="$(run_script link.sh --target "$target" --profile testprofile 2>&1)"; then
+  if ! out="$(run_script link.sh --target "$target" --profile testprofile --editor all 2>&1)"; then
     fail "$name (link.sh exited non-zero: $out)"
     return
   fi
@@ -188,7 +188,7 @@ test_unlink_scoped_removal() {
   echo "not managed by revcon" > "$target/.zed/local-notes.txt"
 
   local out
-  if ! out="$(run_script link.sh --target "$target" --profile testprofile 2>&1)"; then
+  if ! out="$(run_script link.sh --target "$target" --profile testprofile --editor all 2>&1)"; then
     fail "$name (link.sh exited non-zero: $out)"
     return
   fi
@@ -434,7 +434,7 @@ test_link_idempotent_symlink_mode() {
   mkdir -p "$target"
 
   local out1
-  if ! out1="$(run_script link.sh --target "$target" --profile testprofile 2>&1)"; then
+  if ! out1="$(run_script link.sh --target "$target" --profile testprofile --editor all 2>&1)"; then
     fail "$name (first run failed: $out1)"
     return
   fi
@@ -443,7 +443,7 @@ test_link_idempotent_symlink_mode() {
   before="$(find "$target" -type l | sort | while IFS= read -r l; do printf '%s -> %s\n' "$l" "$(readlink "$l")"; done)"
 
   local out2
-  if ! out2="$(run_script link.sh --target "$target" --profile testprofile 2>&1)"; then
+  if ! out2="$(run_script link.sh --target "$target" --profile testprofile --editor all 2>&1)"; then
     fail "$name (second run failed: $out2)"
     return
   fi
@@ -518,8 +518,146 @@ test_private_scanner_accepts_public_author_identity() {
   fi
 }
 
+test_native_policy_requires_content() {
+  local name="native selection rejects absent and empty sources before target mutation"
+  setup_fixture_repo
+  local target="$TMP_ROOT/native-empty" out ok=true selection
+  mkdir -p "$target"
+  for selection in default explicit empty; do
+    local args=()
+    [[ "$selection" == default ]] || args=(--editor revealui)
+    [[ "$selection" != empty ]] || mkdir -p "$FIXTURE_REVCON/profiles/testprofile/revealui/rules"
+    if out="$(run_script link.sh --target "$target" --profile testprofile "${args[@]}" --mode copy 2>&1)"; then ok=false; fi
+    [[ "$out" == *"no native RevealUI content"* && ! -e "$target/.revealui" && ! -e "$target/.claude" && ! -e "$target/.gitignore" ]] || ok=false
+  done
+  run_script link.sh --target "$target" --profile testprofile --editor all --mode copy >/dev/null 2>&1 || ok=false
+  [[ -f "$target/.claude/agents/example.md" || -d "$target/.claude" ]] || ok=false
+  $ok && pass "$name" || fail "$name"
+}
+
+test_native_policy_distribution() {
+  local name="default native-only policy copy, provenance, status, drift, idempotence and safe unlink"
+  setup_fixture_repo
+  mkdir -p "$FIXTURE_REVCON/profiles/revealfleet/revealui/rules"
+  echo 'native fleet policy' > "$FIXTURE_REVCON/profiles/revealfleet/revealui/rules/policy.md"
+  local target="$TMP_ROOT/native-policy" ok=true out before after
+  mkdir -p "$target"
+  run_script link.sh --target "$target" --profile revealfleet --mode copy >/dev/null 2>&1 || ok=false
+  [[ -f "$target/.revealui/content/rules/policy.md" && ! -e "$target/.claude" && ! -e "$target/.cursor" && ! -e "$target/.zed" && ! -e "$target/.agents" && ! -e "$target/.vscode" ]] || ok=false
+  local manifest="$target/.revealui/.revcon-manifest.json"
+  jq -e '.editor == "revealui" and .files["content/rules/policy.md"].source == "profiles/revealfleet/revealui/rules/policy.md"' "$manifest" >/dev/null || ok=false
+  before="$(cat "$manifest")"
+  out="$(run_script link.sh --target "$target" --profile revealfleet --editor revealui --mode copy 2>&1)" || ok=false
+  after="$(cat "$manifest")"
+  [[ "$before" == "$after" && "$out" == *"0 copied"* ]] || ok=false
+  run_script status.sh --target "$target" --editor revealui --verify >/dev/null 2>&1 || ok=false
+  echo 'local change' >> "$target/.revealui/content/rules/policy.md"
+  if run_script status.sh --target "$target" --editor revealui --verify >/dev/null 2>&1; then ok=false; fi
+  run_script unlink.sh --target "$target" --editor revealui >/dev/null 2>&1 || ok=false
+  [[ -f "$target/.revealui/content/rules/policy.md" && -f "$manifest" ]] || ok=false
+  $ok && pass "$name" || fail "$name"
+}
+
+test_native_policy_manifest_admission() {
+  local name="native copy lockstep rejects forged ownership and tracked strays"
+  setup_fixture_repo
+  mkdir -p "$FIXTURE_REVCON/profiles/revealfleet/revealui/rules"
+  echo 'native fleet policy' > "$FIXTURE_REVCON/profiles/revealfleet/revealui/rules/policy.md"
+  local target="$TMP_ROOT/native-admission" ok=true manifest
+  mkdir -p "$target"
+  git -C "$target" init -q
+  run_script link.sh --target "$target" --profile revealfleet --editor revealui --mode copy >/dev/null 2>&1 || ok=false
+  manifest="$target/.revealui/.revcon-manifest.json"
+  git -C "$target" add .revealui
+  bash "$REPO_ROOT/scripts/verify-copy-lockstep.sh" --target "$target" --dot .revealui >/dev/null 2>&1 || ok=false
+  echo 'stray' > "$target/.revealui/content/rules/stray.md"
+  git -C "$target" add .revealui/content/rules/stray.md
+  if bash "$REPO_ROOT/scripts/verify-copy-lockstep.sh" --target "$target" --dot .revealui >/dev/null 2>&1; then ok=false; fi
+  git -C "$target" rm --cached -q .revealui/content/rules/stray.md
+  jq '.files["content/rules/policy.md"].source = "profiles/revealfleet/claude/rules/policy.md"' "$manifest" > "$target/forged.json"
+  mv "$target/forged.json" "$manifest"
+  if bash "$REPO_ROOT/scripts/verify-copy-lockstep.sh" --target "$target" --dot .revealui >/dev/null 2>&1; then ok=false; fi
+  $ok && pass "$name" || fail "$name"
+}
+
+test_native_policy_real_profile() {
+  local name="canonical14 fleet rules materialize natively with exact provenance"
+  setup_fixture_repo
+  mkdir -p "$FIXTURE_REVCON/profiles/revealfleet/revealui"
+  cp -R "$REPO_ROOT/profiles/revealfleet/revealui/rules" "$FIXTURE_REVCON/profiles/revealfleet/revealui/"
+  local target="$TMP_ROOT/native-real-profile" ok=true
+  mkdir -p "$target"
+  run_script link.sh --target "$target" --profile revealfleet --editor revealui --mode copy >/dev/null 2>&1 || ok=false
+  jq -e '.editor == "revealui" and (.files | length == 14) and all(.files | to_entries[]; (.key | startswith("content/rules/")) and (.value.source | startswith("profiles/revealfleet/revealui/rules/")))' "$target/.revealui/.revcon-manifest.json" >/dev/null || ok=false
+  run_script status.sh --target "$target" --editor revealui --verify >/dev/null 2>&1 || ok=false
+  [[ ! -e "$target/.claude" ]] || ok=false
+  $ok && pass "$name" || fail "$name"
+}
+
+test_native_unlink_rejects_manifest_escape() {
+  local name="native unlink refuses manifest path escape before deleting files"
+  setup_fixture_repo
+  local target="$TMP_ROOT/native-unlink-escape" outside="$TMP_ROOT/native-keep.md" ok=true hash
+  mkdir -p "$target/.revealui"
+  echo 'must remain' > "$outside"
+  hash="$(sha256sum < "$outside" | cut -d' ' -f1)"
+  jq -n --arg hash "$hash" '{mode:"copy",editor:"revealui",profiles:["revealfleet"],files:{"../../native-keep.md":{source:"profiles/revealfleet/revealui/rules/policy.md",sha256:$hash}}}' > "$target/.revealui/.revcon-manifest.json"
+  if run_script unlink.sh --target "$target" --editor revealui >/dev/null 2>&1; then ok=false; fi
+  [[ -f "$outside" && -f "$target/.revealui/.revcon-manifest.json" ]] || ok=false
+  $ok && pass "$name" || fail "$name"
+}
+
+test_native_policy_claude_projection() {
+  local name="optional Claude projection uses native policy and retains unique overlays"
+  setup_fixture_repo
+  mkdir -p "$FIXTURE_REVCON/profiles/revealfleet/revealui/rules" "$FIXTURE_REVCON/profiles/revealfleet/claude/rules"
+  echo 'native policy' > "$FIXTURE_REVCON/profiles/revealfleet/revealui/rules/policy.md"
+  echo 'vendor collision' > "$FIXTURE_REVCON/profiles/revealfleet/claude/rules/policy.md"
+  echo 'vendor only' > "$FIXTURE_REVCON/profiles/revealfleet/claude/rules/unique.md"
+  local target="$TMP_ROOT/native-projection" ok=true
+  mkdir -p "$target"
+  run_script link.sh --target "$target" --profile revealfleet --editor claude --mode copy >/dev/null 2>&1 || ok=false
+  [[ "$(cat "$target/.claude/rules/policy.md")" == 'native policy' ]] || ok=false
+  [[ "$(cat "$target/.claude/rules/unique.md")" == 'vendor only' ]] || ok=false
+  [[ ! -e "$target/.revealui" ]] || ok=false
+  jq -e '.files["rules/policy.md"].source == "profiles/revealfleet/revealui/rules/policy.md" and .files["rules/unique.md"].source == "profiles/revealfleet/claude/rules/unique.md"' "$target/.claude/.revcon-manifest.json" >/dev/null || ok=false
+  run_script status.sh --target "$target" --editor claude --verify >/dev/null 2>&1 || ok=false
+  $ok && pass "$name" || fail "$name"
+}
+
+test_native_policy_symlink_safety() {
+  local name="native policy refuses escaped destinations and unlinks only owned symlinks"
+  setup_fixture_repo
+  mkdir -p "$FIXTURE_REVCON/profiles/revealfleet/revealui/rules"
+  echo 'native' > "$FIXTURE_REVCON/profiles/revealfleet/revealui/rules/policy.md"
+  local target="$TMP_ROOT/native-symlink" outside="$TMP_ROOT/native-outside" ok=true
+  mkdir -p "$target/.revealui/content" "$outside"
+  ln -s "$outside" "$target/.revealui/content/rules"
+  if run_script link.sh --target "$target" --profile revealfleet --editor revealui --mode copy >/dev/null 2>&1; then ok=false; fi
+  [[ ! -e "$outside/policy.md" ]] || ok=false
+  rm "$target/.revealui/content/rules"
+  echo 'external manifest' > "$outside/manifest.json"
+  ln -s "$outside/manifest.json" "$target/.revealui/.revcon-manifest.json"
+  if run_script link.sh --target "$target" --profile revealfleet --editor revealui --mode copy >/dev/null 2>&1; then ok=false; fi
+  [[ "$(cat "$outside/manifest.json")" == 'external manifest' ]] || ok=false
+  rm "$target/.revealui/.revcon-manifest.json"
+  run_script link.sh --target "$target" --profile revealfleet --editor revealui >/dev/null 2>&1 || ok=false
+  [[ -L "$target/.revealui/content/rules/policy.md" ]] || ok=false
+  ln -s "$outside" "$target/.revealui/content/user-link"
+  run_script unlink.sh --target "$target" --editor revealui >/dev/null 2>&1 || ok=false
+  [[ ! -L "$target/.revealui/content/rules/policy.md" && -L "$target/.revealui/content/user-link" ]] || ok=false
+  $ok && pass "$name" || fail "$name"
+}
+
 # Run all scenarios
 # ---------------------------------------------------------------------------
+test_native_policy_requires_content
+test_native_policy_distribution
+test_native_policy_manifest_admission
+test_native_policy_real_profile
+test_native_unlink_rejects_manifest_escape
+test_native_policy_claude_projection
+test_native_policy_symlink_safety
 test_symlink_link_creates_expected_links
 test_copy_mode_manifest_and_drift
 test_unlink_scoped_removal
