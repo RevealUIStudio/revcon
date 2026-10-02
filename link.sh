@@ -41,7 +41,7 @@ Options:
   --target DIR     Project directory to link into (required)
   --profile NAME   Profile overlay (repeatable; later wins on collision)
                    Examples: revealfleet, revealui, revforge
-  --editor NAME    Editor to link: cursor, zed, vscode, claude, agents, all (default: all)
+  --editor NAME    Editor to link: revealui, cursor, zed, vscode, claude, agents, all (default: all)
   --mode NAME      Distribution mode: symlink (default) or copy. Copy mode
                    materializes real files so the target repo can git-track
                    them, writes <dot_dir>/.revcon-manifest.json (per-file
@@ -143,6 +143,7 @@ should_skip_editor() {
 
 # Map editor names to their dot-directories in the target
 declare -A EDITOR_DIRS=(
+  [revealui]=".revealui"
   [cursor]=".cursor"
   [zed]=".zed"
   [vscode]=".vscode"
@@ -154,7 +155,7 @@ declare -A EDITOR_DIRS=(
 # or executable commands. Every adapter supports explicit file reading.
 declare -A SHARED_WORKFLOW_DIRS=(
   [cursor]="workflows" [zed]="workflows" [vscode]="workflows"
-  [claude]="workflows" [agents]="workflows"
+  [claude]="workflows" [agents]="workflows" [revealui]="content/workflows"
 )
 
 LINKED=0
@@ -272,13 +273,15 @@ link_editor() {
   local dot_dir="${EDITOR_DIRS[$editor]}"
   local base_src="$SCRIPT_DIR/base/$editor"
   local target_dir="$TARGET/$dot_dir"
+  local prefix=""
+  [[ "$editor" == "revealui" ]] && prefix="content/"
 
   # Check if there are any files to link for this editor
   local has_base=false
   local has_any_profile=false
   [[ -d "$base_src" ]] && has_base=true
   for pdir in "${PROFILE_DIRS[@]+"${PROFILE_DIRS[@]}"}"; do
-    if [[ -d "$pdir/$editor" || -d "$pdir/workflows" || -L "$pdir/workflows" ]]; then
+    if [[ -d "$pdir/$editor" || ( "$editor" != "revealui" && ( -d "$pdir/workflows" || -L "$pdir/workflows" ) ) || ( "$editor" == "claude" && -d "$pdir/revealui" ) ]]; then
       has_any_profile=true
       break
     fi
@@ -289,6 +292,10 @@ link_editor() {
   fi
 
   echo "[$editor] → $target_dir"
+
+  if [[ "$editor" == "revealui" && "$MODE" == "copy" && -L "$target_dir/.revcon-manifest.json" ]]; then
+    echo "Error: unsafe native policy manifest destination" >&2; exit 1
+  fi
 
   # Create real directory (not symlink) so editor state stays local
   if ! $DRY_RUN; then
@@ -302,7 +309,7 @@ link_editor() {
   if $has_base; then
     while IFS= read -r -d '' file; do
       local rel="${file#"$base_src/"}"
-      file_map["$rel"]="$file"
+      file_map["$prefix$rel"]="$file"
     done < <(find "$base_src" -type f -print0 | sort -z)
   fi
 
@@ -310,11 +317,11 @@ link_editor() {
     local profile_src="$pdir/$editor"
     # Per-profile shared content precedes that profile's adapter overlay.
     local shared_src="$pdir/workflows"
-    if [[ -L "$shared_src" ]]; then
+    if [[ "$editor" != "revealui" && -L "$shared_src" ]]; then
       echo "Error: shared workflow root must be a real directory: $shared_src" >&2
       exit 1
     fi
-    if [[ -d "$shared_src" ]]; then
+    if [[ "$editor" != "revealui" && -d "$shared_src" ]]; then
       if ! find "$shared_src" -print >/dev/null; then
         echo "Error: cannot enumerate workflow sources: $shared_src" >&2
         exit 1
@@ -329,10 +336,44 @@ link_editor() {
       done < <(find "$shared_src" \( -type f -o -type l \) -print0 | sort -z)
     fi
     [[ -d "$profile_src" ]] || continue
+    if [[ "$editor" == "revealui" && ( -L "$profile_src" || -n "$(find "$profile_src" -type l -print -quit)" ) ]]; then
+      echo "Error: native policy sources must be real files: $profile_src" >&2; exit 1
+    fi
     while IFS= read -r -d '' file; do
       local rel="${file#"$profile_src/"}"
-      file_map["$rel"]="$file"
+      file_map["$prefix$rel"]="$file"
     done < <(find "$profile_src" -type f -print0 | sort -z)
+  done
+
+  # First-party policy wins vendor collisions. Unique explicit Claude-only
+  # profile content remains supported; it cannot replace native policy.
+  if [[ "$editor" == "claude" ]]; then
+    for native_src in "$SCRIPT_DIR/base/revealui" "${PROFILE_DIRS[@]/%//revealui}"; do
+      [[ -d "$native_src" ]] || continue
+      [[ ! -L "$native_src" ]] || { echo "Error: native profile root must be real" >&2; exit 1; }
+      while IFS= read -r -d '' file; do
+        [[ -f "$file" && ! -L "$file" && -r "$file" ]] || { echo "Error: invalid native source: $file" >&2; exit 1; }
+        local rel="${file#"$native_src/"}"
+        file_map["$rel"]="$file"
+      done < <(find "$native_src" \( -type f -o -type l \) -print0 | sort -z)
+    done
+  fi
+
+  # Native policy and its projections must not traverse a destination symlink.
+  for rel in "${!file_map[@]}"; do
+    local src="${file_map[$rel]}" dst="$target_dir/$rel" resolved
+    if [[ "$editor" == "revealui" ]]; then
+      case "$rel" in content/rules/*|content/agents/*|content/skills/*|content/commands/*) ;;
+        *) echo "Error: unsupported native content path: $rel" >&2; exit 1 ;;
+      esac
+      [[ -f "$src" && ! -L "$src" && -r "$src" ]] || { echo "Error: invalid native policy source" >&2; exit 1; }
+    fi
+    if [[ "$editor" == "revealui" || "$src" == */revealui/* ]]; then
+      resolved="$(realpath -m -- "$(dirname "$dst")")/$(basename "$dst")"
+      if [[ -L "$target_dir" || "$resolved" != "$target_dir/"* ]]; then
+        echo "Error: unsafe native policy destination: $dst" >&2; exit 1
+      fi
+    fi
   done
 
   # Shared/manual documents preserve user ownership during migration. A copy
@@ -446,8 +487,12 @@ fi
 $DRY_RUN && echo "(dry run)"
 echo ""
 
+if [[ "$EDITOR" != "all" && -z "${EDITOR_DIRS[$EDITOR]+x}" ]]; then
+  echo "Error: unknown editor: $EDITOR" >&2; exit 1
+fi
+
 if [[ "$EDITOR" == "all" ]]; then
-  for e in cursor zed vscode claude agents; do
+  for e in revealui cursor zed vscode claude agents; do
     if should_skip_editor "$e"; then
       echo "[$e] skipped (REVCON_SKIP_EDITORS / --skip)"
       continue
@@ -480,12 +525,12 @@ warn_if_ignored() {
 }
 
 if [[ "$EDITOR" == "all" ]]; then
-  for e in cursor zed vscode claude agents; do
+  for e in revealui cursor zed vscode claude agents; do
     should_skip_editor "$e" && continue
     if [[ "$MODE" == "copy" ]]; then
       warn_if_ignored "${EDITOR_DIRS[$e]}"
     else
-      ensure_gitignored "${EDITOR_DIRS[$e]}/"
+      if [[ "$e" == "revealui" ]]; then ensure_gitignored ".revealui/content/"; else ensure_gitignored "${EDITOR_DIRS[$e]}/"; fi
     fi
   done
 else
@@ -493,7 +538,7 @@ else
     if [[ "$MODE" == "copy" ]]; then
       warn_if_ignored "${EDITOR_DIRS[$EDITOR]}"
     else
-      ensure_gitignored "${EDITOR_DIRS[$EDITOR]}/"
+      if [[ "$EDITOR" == "revealui" ]]; then ensure_gitignored ".revealui/content/"; else ensure_gitignored "${EDITOR_DIRS[$EDITOR]}/"; fi
     fi
   fi
 fi

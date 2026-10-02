@@ -260,3 +260,20 @@ Copy manifests record the shared canonical source; existing status verification,
 copy lockstep and confined unlink operate on these entries normally. Unlink
 keeps modified copies. Use the normal unlink lifecycle before switching a workflow copy installation
 to symlink mode; this prevents a stale copy manifest from masking link status.
+
+### First-party fleet policy
+
+Fleet policy is owned in `profiles/revealfleet/revealui/rules/`. Materialize
+first-party policy without vendor output:
+
+```bash
+./link.sh --target /path/to/project --profile revealfleet --editor revealui --mode copy
+./status.sh --target /path/to/project --editor revealui --verify
+```
+
+This writes `.revealui/content/rules/` and `.revealui/.revcon-manifest.json`
+with `content/rules/...` keys and native profile source hashes. Claude is an
+optional third-party projection requested with `--editor claude`; native
+policy wins collisions while unique Claude-only profile files are retained.
+Do not hand-copy or edit installed policy. Edit its owning profile and use
+the maintained materializer.
