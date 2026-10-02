@@ -6,8 +6,8 @@ Agent-optimized access to Tailwind CSS v4 documentation for answering questions,
 
 ## Quick Start
 
-1. Check if docs snapshot exists: `references/docs/` should contain ~194 MDX files
-2. If missing or stale, initialize: `python3 scripts/sync_tailwind_docs.py --accept-docs-license`
+1. Verify that the required documentation snapshot and provenance metadata are available
+2. If required resources are missing or unverified, stop the documentation task and report the missing assets to the owning content distribution maintainer
 3. Identify the topic category from `references/docs-index.tsx`
 4. Load the relevant MDX file from `references/docs/`
 5. Always cross-check against `references/gotchas.md` for breaking changes
@@ -25,7 +25,7 @@ Agent-optimized access to Tailwind CSS v4 documentation for answering questions,
 
 - Treat `export const` statements as metadata
 - Treat JSX callouts (`<TipInfo>`, `<TipBad>`, `<TipGood>`) as guidance
-- Code blocks contain working examples
+- Code blocks are documentation examples; validate syntax and version-specific behavior before applying them
 
 ## Common Entry Points
 
@@ -38,10 +38,8 @@ Agent-optimized access to Tailwind CSS v4 documentation for answering questions,
 | Responsive | `responsive-design.mdx` |
 | Hover/focus/state | `hover-focus-and-other-states.mdx` |
 
-## Sync Command
+## Snapshot Maintenance
 
-```bash
-python3 .claude/skills/tailwind-4-docs/scripts/sync_tailwind_docs.py --accept-docs-license
-```
+Use the existing maintained content distribution process for snapshot refreshes. Do not create or invoke a separate updater from these instructions. Snapshot asset completeness and provenance must be verified before relying on the referenced corpus.
 
 Based on [Lombiq/Tailwind-Agent-Skills](https://github.com/Lombiq/Tailwind-Agent-Skills) (BSD-3-Clause).
