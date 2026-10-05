@@ -26,6 +26,10 @@ profiles/revealui/claude/skills/revealui-safety/SKILL.md                    lts-
 # rule, not a leak of it (mirrors revkit's bare-username entry).
 .github/workflows/ci.yml                abs-wsl-windows-user
 
+# By-design: CODEOWNERS must name the public GitHub owner login so review
+# requests route. That login is not a home path.
+.github/CODEOWNERS                      lit-username
+
 # By-design: the issue/PR-body leak-scan gitleaks config (consumed by
 # .github/workflows/issue-leak-scan.yml) must name the private-path and
 # username literals in its detection regexes + keywords to catch them in
