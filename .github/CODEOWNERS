@@ -1,0 +1,11 @@
+# Security-sensitive policy. GitHub requests a review from either account.
+# CODEOWNERS owns itself so later policy edits require review.
+# Patterns are limited to controls that already exist in this repo.
+/.github/CODEOWNERS @joshua-v-dev @RevealUIStudio
+/.github/workflows/ @joshua-v-dev @RevealUIStudio
+/.github/codeql/ @joshua-v-dev @RevealUIStudio
+/.gitleaks.issues.toml @joshua-v-dev @RevealUIStudio
+/.leakignore @joshua-v-dev @RevealUIStudio
+/SECURITY.md @joshua-v-dev @RevealUIStudio
+/scripts/check-client-leaks.sh @joshua-v-dev @RevealUIStudio
+/scripts/check-no-private-leaks.sh @joshua-v-dev @RevealUIStudio
