@@ -34,6 +34,15 @@ DRY_RUN=false
 SKIP_EDITORS="${REVCON_SKIP_EDITORS:-}"
 PRIVATE_PROFILES_DIR="${REVCON_PRIVATE_PROFILES_DIR:-}"
 
+# Naming admission precedes both public and private profile resolution. A
+# directory with a retired identity must not restore an accepted alias.
+is_shortened_fleet_identity() {
+  case "/$1/" in
+    *"/"[Rr][Ee][Vv][Ff][Ll][Ee][Ee][Tt]"/"*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 usage() {
   cat <<'EOF'
 Usage: link.sh [OPTIONS]
@@ -70,12 +79,19 @@ EOF
 
 print_profiles() {
   echo "Available profiles:"
+  local dir name
   for dir in "$SCRIPT_DIR"/profiles/*/; do
-    [ -d "$dir" ] && echo "  $(basename "$dir")"
+    [[ -d "$dir" ]] || continue
+    name="$(basename "$dir")"
+    is_shortened_fleet_identity "$name" && continue
+    echo "  $name"
   done
   if [[ -n "$PRIVATE_PROFILES_DIR" && -d "$PRIVATE_PROFILES_DIR" ]]; then
     for dir in "$PRIVATE_PROFILES_DIR"/*/; do
-      [ -d "$dir" ] && echo "  $(basename "$dir") (private)"
+      [[ -d "$dir" ]] || continue
+      name="$(basename "$dir")"
+      is_shortened_fleet_identity "$name" && continue
+      echo "  $name (private)"
     done
   fi
 }
@@ -88,7 +104,12 @@ list_profiles() {
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --target)  TARGET="$2";  shift 2 ;;
-    --profile) PROFILES+=("$2"); shift 2 ;;
+    --profile)
+      if is_shortened_fleet_identity "$2"; then
+        echo "Error: shortened fleet identity is not supported; use --profile revealfleet" >&2
+        exit 1
+      fi
+      PROFILES+=("$2"); shift 2 ;;
     --editor)  EDITOR="$2";  shift 2 ;;
     --mode)    MODE="$2";    shift 2 ;;
     --skip)    SKIP_EDITORS="${SKIP_EDITORS:+$SKIP_EDITORS,}$2"; shift 2 ;;
