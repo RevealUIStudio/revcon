@@ -737,6 +737,69 @@ test_native_policy_symlink_safety() {
   $ok && pass "$name" || fail "$name"
 }
 
+# Hand-written files in the native tree and in vendor projections must survive
+# both modes. A second run must not replace them.
+test_projection_preserves_handwritten_files() {
+  local mode target out out2 ok
+  setup_fixture_repo
+  mkdir -p "$FIXTURE_REVCON/profiles/revealfleet/revealui/rules"
+  printf 'native biome\n' > "$FIXTURE_REVCON/profiles/revealfleet/revealui/rules/biome.md"
+  printf 'native other\n' > "$FIXTURE_REVCON/profiles/revealfleet/revealui/rules/other.md"
+
+  for mode in symlink copy; do
+    local name="handwritten native and vendor files survive $mode mode and a re-run"
+    target="$TMP_ROOT/preserve-$mode"
+    rm -rf "$target"
+    mkdir -p "$target/.claude/rules" "$target/.grok/rules" "$target/.revealui/content/rules"
+    printf 'user claude biome\n' > "$target/.claude/rules/biome.md"
+    printf 'user grok biome\n' > "$target/.grok/rules/biome.md"
+    printf 'user native biome\n' > "$target/.revealui/content/rules/biome.md"
+    ok=true
+    if ! out="$(run_script link.sh --target "$target" --profile revealfleet --mode "$mode" 2>&1)"; then
+      fail "$name (first run: $out)"
+      continue
+    fi
+    [[ "$(cat "$target/.claude/rules/biome.md")" == "user claude biome" ]] || ok=false
+    [[ "$(cat "$target/.grok/rules/biome.md")" == "user grok biome" ]] || ok=false
+    [[ "$(cat "$target/.revealui/content/rules/biome.md")" == "user native biome" ]] || ok=false
+    [[ ! -L "$target/.claude/rules/biome.md" && ! -L "$target/.grok/rules/biome.md" && ! -L "$target/.revealui/content/rules/biome.md" ]] || ok=false
+    [[ "$out" == *"real file exists"* ]] || ok=false
+    if [[ "$mode" == "symlink" ]]; then
+      [[ -L "$target/.revealui/content/rules/other.md" ]] || ok=false
+      [[ -L "$target/.claude/rules/other.md" && -L "$target/.grok/rules/other.md" ]] || ok=false
+      [[ "$(readlink "$target/.claude/rules/other.md")" == "$FIXTURE_REVCON/profiles/revealfleet/revealui/rules/other.md" ]] || ok=false
+    else
+      [[ -f "$target/.revealui/content/rules/other.md" && ! -L "$target/.revealui/content/rules/other.md" ]] || ok=false
+      [[ "$(cat "$target/.revealui/content/rules/other.md")" == "native other" ]] || ok=false
+      [[ "$(head -n 1 "$target/.claude/rules/other.md")" == "<!-- generated from .revealui/content/rules/other.md -->" ]] || ok=false
+      [[ "$(tail -n +2 "$target/.claude/rules/other.md")" == "native other" ]] || ok=false
+      [[ "$(head -n 1 "$target/.grok/rules/other.md")" == "<!-- generated from .revealui/content/rules/other.md -->" ]] || ok=false
+      jq -e '.files["rules/biome.md"] == null and .files["rules/other.md"].generatedFrom == ".revealui/content/rules/other.md"' \
+        "$target/.claude/.revcon-manifest.json" >/dev/null || ok=false
+      jq -e '.files["content/rules/biome.md"] == null and .files["content/rules/other.md"].source == "profiles/revealfleet/revealui/rules/other.md"' \
+        "$target/.revealui/.revcon-manifest.json" >/dev/null || ok=false
+    fi
+    if ! out2="$(run_script link.sh --target "$target" --profile revealfleet --mode "$mode" 2>&1)"; then
+      fail "$name (re-run: $out2)"
+      continue
+    fi
+    [[ "$(cat "$target/.claude/rules/biome.md")" == "user claude biome" ]] || ok=false
+    [[ "$(cat "$target/.grok/rules/biome.md")" == "user grok biome" ]] || ok=false
+    [[ "$(cat "$target/.revealui/content/rules/biome.md")" == "user native biome" ]] || ok=false
+    [[ ! -L "$target/.claude/rules/biome.md" && ! -L "$target/.grok/rules/biome.md" && ! -L "$target/.revealui/content/rules/biome.md" ]] || ok=false
+    if [[ "$mode" == "copy" ]]; then
+      [[ "$out2" == *"0 copied"* ]] || ok=false
+    else
+      [[ "$out2" == *"0 linked"* ]] || ok=false
+    fi
+    if $ok; then
+      pass "$name"
+    else
+      fail "$name (first=$out re=$out2)"
+    fi
+  done
+}
+
 # Run all scenarios
 # ---------------------------------------------------------------------------
 test_native_policy_requires_content
@@ -745,6 +808,7 @@ test_native_policy_manifest_admission
 test_native_policy_real_profile
 test_native_unlink_rejects_manifest_escape
 test_native_policy_claude_projection
+test_projection_preserves_handwritten_files
 test_native_policy_symlink_safety
 test_symlink_link_creates_expected_links
 test_copy_mode_manifest_and_drift

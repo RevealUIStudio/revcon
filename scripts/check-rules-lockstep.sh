@@ -207,6 +207,7 @@ check_manifests_and_projections() {
         if [[ ! -f "$ref" ]]; then
           echo "[rules-lockstep] SRC-GONE reference=$from manifest=$manifest" >&2
           fail=1
+        # shellcheck disable=SC2055 # stale unless the body, native reference, and profile source all match
         elif [[ "$body" != "$(hash_file "$ref")" || "$body" != "$(hash_file "$REPO_ROOT/$src")" ]]; then
           echo "[rules-lockstep] STALE file=$rel source=$src reference=$from" >&2
           fail=1
