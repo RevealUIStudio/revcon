@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # GAP-372: materialized .claude rules must match .revcon-manifest.json
+  # Native .revealui/content is the reference. Vendor dirs are projections.
   copy-lockstep:
     name: Copy lockstep
     runs-on: ubuntu-latest
@@ -23,8 +23,11 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
-      - name: Verify copy-mode lockstep
-        run: bash scripts/verify-copy-lockstep.sh --target "$GITHUB_WORKSPACE"
+      - name: Verify native copy and vendor projections
+        run: |
+          bash scripts/verify-copy-lockstep.sh --target "$GITHUB_WORKSPACE" --dot .revealui
+          bash scripts/verify-copy-lockstep.sh --target "$GITHUB_WORKSPACE" --dot .claude
+          bash scripts/verify-copy-lockstep.sh --target "$GITHUB_WORKSPACE" --dot .grok
 
   parse-shell:
     name: bash -n (all .sh)

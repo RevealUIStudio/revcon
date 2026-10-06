@@ -1,4 +1,3 @@
-<!-- generated from .revealui/content/rules/model-allocation.md -->
 # Model Allocation — Work Class First, Provider Second
 
 **Status:** convention. Routes which kind of work goes to which kind of model

@@ -4,7 +4,7 @@ alwaysApply: true
 
 # RevealUI Framework - Cursor IDE Rules
 
-**Note (2026-05-29):** Authoritative agent rules live in `~/.claude/rules/` and `.claude/rules/`. The architecture map below was reconciled with the RevealUI monorepo (`apps/*` + `packages/*`) on 2026-05-29.
+**Note (2026-05-29):** Authoritative agent rules live in `.revealui/content/rules/` and the fleet `.revealui`. The architecture map below was reconciled with the RevealUI monorepo (`apps/*` + `packages/*`) on 2026-05-29.
 
 ## Project Overview
 RevealUI is a framework built with:

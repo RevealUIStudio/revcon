@@ -1,5 +1,5 @@
 {
-  "editor": "claude",
+  "editor": "grok",
   "files": {
     "rules/code-over-docs.md": {
       "generatedFrom": ".revealui/content/rules/code-over-docs.md",

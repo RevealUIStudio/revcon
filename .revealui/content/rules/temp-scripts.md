@@ -1,4 +1,3 @@
-<!-- generated from .revealui/content/rules/temp-scripts.md -->
 # Temp Scripts — Registered Lifecycle, No Orphans
 
 **Status:** convention.

@@ -1,4 +1,3 @@
-<!-- generated from .revealui/content/rules/disposition-actions.md -->
 # Disposition Actions — Propose, Don't Dispose
 
 **Status:** convention. Applies to every agent working in this fleet.

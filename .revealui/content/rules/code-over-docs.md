@@ -1,4 +1,3 @@
-<!-- generated from .revealui/content/rules/code-over-docs.md -->
 # Code Over Docs — Source of Truth Is Always the Source Code
 
 **Status:** convention. Applies to every repo and every session.

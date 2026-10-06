@@ -28,7 +28,7 @@ Usage: status.sh [OPTIONS]
 
 Options:
   --target DIR     Check a specific project directory (default: scan sibling projects)
-  --editor NAME    Filter to editor: revealui, cursor, zed, vscode, claude, agents (default: all)
+  --editor NAME    Filter to editor: revealui, cursor, zed, vscode, claude, grok, agents (default: all)
   --skip NAME      Skip a specific editor (repeatable, comma-separated also works)
   --json           Machine-readable JSON output
   --verify         Exit 1 if any copy-mode materialization has drift (GAP-372).
@@ -109,19 +109,20 @@ declare -A EDITOR_DIRS=(
   [zed]=".zed"
   [vscode]=".vscode"
   [claude]=".claude"
+  [grok]=".grok"
   [agents]=".agents"
 )
 
 # Build list of editors to check
 EDITORS=()
 if [[ "$EDITOR" == "all" ]]; then
-  for e in revealui cursor zed vscode claude agents; do
+  for e in revealui cursor zed vscode claude grok agents; do
     should_skip_editor "$e" && continue
     EDITORS+=("$e")
   done
 else
   if [[ -z "${EDITOR_DIRS[$EDITOR]+x}" ]]; then
-    echo "Error: unknown editor: $EDITOR (expected cursor, zed, vscode, claude, or agents)"
+    echo "Error: unknown editor: $EDITOR (expected revealui, cursor, zed, vscode, claude, grok, or agents)"
     exit 1
   fi
   if should_skip_editor "$EDITOR"; then
@@ -222,6 +223,18 @@ derive_source() {
   fi
 }
 
+# Hash of a projected file after a leading "generated from" marker line.
+# Files without that marker are hashed whole.
+projection_body_hash() {
+  local file="$1" first
+  IFS= read -r first < "$file" || true
+  if [[ "$first" == "<!-- generated from .revealui/content/"* && "$first" == *"-->" ]]; then
+    tail -n +2 "$file" | sha256sum | awk '{print $1}'
+  else
+    sha256sum < "$file" | awk '{print $1}'
+  fi
+}
+
 # --- Collect data ---
 
 JSON_TARGETS=()
@@ -300,11 +313,12 @@ process_target() {
         m_profiles="$(jq -r '.profiles | join(", ")' "$manifest" 2>/dev/null || true)"
         while IFS= read -r encoded; do
           [[ -n "$encoded" ]] || continue
-          local row rel src_rel want_hash
+          local row rel src_rel want_hash generated_from
           row="$(printf '%s' "$encoded" | base64 -d)"
           rel="$(jq -r '.key' <<< "$row")"
           src_rel="$(jq -r '.value.source' <<< "$row")"
           want_hash="$(jq -r '.value.sha256' <<< "$row")"
+          generated_from="$(jq -r '.value.generatedFrom // empty' <<< "$row")"
           ((m_total++)) || true
           local fpath="$target_dir/$rel"
           local state="ok"
@@ -327,9 +341,14 @@ process_target() {
               if [[ ! -f "$src_abs" ]]; then
                 state="orphaned"
               else
-                local src_hash
+                local src_hash body_hash
                 src_hash="$(sha256sum < "$src_abs" | cut -d' ' -f1)"
-                [[ "$src_hash" == "$want_hash" ]] || state="stale"
+                if [[ -n "$generated_from" ]]; then
+                  body_hash="$(projection_body_hash "$fpath")"
+                  [[ "$body_hash" == "$src_hash" ]] || state="stale"
+                else
+                  [[ "$src_hash" == "$want_hash" ]] || state="stale"
+                fi
               fi
             fi
           fi

@@ -8,8 +8,11 @@
 #   ./link.sh --target ~/revealfleet/revealui --editor zed         # zed only
 #   ./link.sh --list                                            # show available profiles
 #
-# Starts with .revealui/content/ only; vendor adapters require --editor NAME
-# or explicit --editor all. Creates real directories in the target,
+# Always writes .revealui/content first when native sources exist, then
+# generates .claude and .grok as projections of that tree. Each projection
+# carries a "generated from .revealui" marker, whatever --editor is passed.
+# Other adapters still require --editor NAME or explicit --editor all.
+# Creates real directories in the target,
 # then symlinks individual config files from base/ and optionally one or more
 # profile overlays. --profile is repeatable; profiles are applied in the order
 # given, and later profiles override earlier ones on filename collisions
@@ -51,7 +54,9 @@ Options:
   --target DIR     Project directory to link into (required)
   --profile NAME   Profile overlay (repeatable; later wins on collision)
                    Examples: revealfleet, revealui, revforge
-  --editor NAME    Editor to link: revealui, cursor, zed, vscode, claude, agents, all (default: revealui)
+  --editor NAME    Editor to link: revealui, cursor, zed, vscode, claude, grok, agents, all (default: revealui)
+                   revealui is always written first when native sources exist.
+                   .claude and .grok are projections of that native tree.
   --mode NAME      Distribution mode: symlink (default) or copy. Copy mode
                    materializes real files so the target repo can git-track
                    them, writes <dot_dir>/.revcon-manifest.json (per-file
@@ -170,6 +175,7 @@ declare -A EDITOR_DIRS=(
   [zed]=".zed"
   [vscode]=".vscode"
   [claude]=".claude"
+  [grok]=".grok"
   [agents]=".agents"
 )
 
@@ -303,7 +309,7 @@ link_editor() {
   local has_any_profile=false
   [[ -d "$base_src" ]] && has_base=true
   for pdir in "${PROFILE_DIRS[@]+"${PROFILE_DIRS[@]}"}"; do
-    if [[ -d "$pdir/$editor" || ( "$editor" != "revealui" && ( -d "$pdir/workflows" || -L "$pdir/workflows" ) ) || ( "$editor" == "claude" && -d "$pdir/revealui" ) ]]; then
+    if [[ -d "$pdir/$editor" || ( "$editor" != "revealui" && ( -d "$pdir/workflows" || -L "$pdir/workflows" ) ) ]]; then
       has_any_profile=true
       break
     fi
@@ -311,7 +317,7 @@ link_editor() {
 
   if ! $has_base && ! $has_any_profile; then
     if [[ "$editor" == "revealui" && "$EDITOR" != "all" ]]; then
-      echo "Error: no native RevealUI content for selected profiles; provide maintained base/revealui or profiles/<profile>/revealui content. Vendor projections require explicit --editor NAME." >&2
+      echo "Error: no native RevealUI content for selected profiles; provide maintained base/revealui or profiles/<profile>/revealui content." >&2
       exit 1
     fi
     return
@@ -366,22 +372,21 @@ link_editor() {
     done < <(find "$profile_src" -type f -print0 | sort -z)
   done
 
-  # First-party policy wins vendor collisions. Unique explicit Claude-only
-  # profile content remains supported; it cannot replace native policy.
+  # Vendor profile files cannot replace native policy. Collisions are
+  # dropped here and written later as projections of the native tree.
   if [[ "$editor" == "claude" ]]; then
     for native_src in "$SCRIPT_DIR/base/revealui" "${PROFILE_DIRS[@]/%//revealui}"; do
-      [[ -d "$native_src" ]] || continue
-      [[ ! -L "$native_src" ]] || { echo "Error: native profile root must be real" >&2; exit 1; }
+      [[ -d "$native_src" && ! -L "$native_src" ]] || continue
       while IFS= read -r -d '' file; do
-        [[ -f "$file" && ! -L "$file" && -r "$file" ]] || { echo "Error: invalid native source: $file" >&2; exit 1; }
+        [[ -f "$file" && ! -L "$file" ]] || continue
         local rel="${file#"$native_src/"}"
-        file_map["$rel"]="$file"
-      done < <(find "$native_src" \( -type f -o -type l \) -print0 | sort -z)
+        unset "file_map[$rel]"
+      done < <(find "$native_src" -type f -print0 | sort -z)
     done
   fi
 
-  if [[ "$editor" == "revealui" && ${#file_map[@]} -eq 0 ]]; then
-    if [[ "$EDITOR" != "all" ]]; then
+  if [[ ${#file_map[@]} -eq 0 ]]; then
+    if [[ "$editor" == "revealui" && "$EDITOR" != "all" ]]; then
       echo "Error: no native RevealUI content files for selected profiles; empty native directories cannot materialize policy." >&2
       exit 1
     fi
@@ -460,6 +465,7 @@ link_editor() {
 
   # Create subdirectories and symlink files
   while IFS= read -r -d '' rel; do
+    [[ -n "$rel" ]] || continue
     local src="${file_map[$rel]}"
     local dst="$target_dir/$rel"
     local dst_parent
@@ -513,6 +519,193 @@ ensure_gitignored() {
   fi
 }
 
+# True when base or a selected profile has at least one real native file.
+native_policy_available() {
+  local base_src="$SCRIPT_DIR/base/revealui" pdir
+  if [[ -d "$base_src" && -n "$(find "$base_src" -type f -print -quit)" ]]; then
+    return 0
+  fi
+  for pdir in "${PROFILE_DIRS[@]+"${PROFILE_DIRS[@]}"}"; do
+    [[ -d "$pdir/revealui" && ! -L "$pdir/revealui" ]] || continue
+    [[ -n "$(find "$pdir/revealui" -type f -print -quit)" ]] && return 0
+  done
+  return 1
+}
+
+# rel under .revealui (content/...) -> absolute source path.
+collect_native_file_map() {
+  local -n _dest=$1
+  local base_src="$SCRIPT_DIR/base/revealui" pdir profile_src file rel
+  if [[ -d "$base_src" ]]; then
+    while IFS= read -r -d '' file; do
+      rel="content/${file#"$base_src/"}"
+      _dest["$rel"]="$file"
+    done < <(find "$base_src" -type f -print0 | sort -z)
+  fi
+  for pdir in "${PROFILE_DIRS[@]+"${PROFILE_DIRS[@]}"}"; do
+    profile_src="$pdir/revealui"
+    [[ -d "$profile_src" && ! -L "$profile_src" ]] || continue
+    while IFS= read -r -d '' file; do
+      [[ -f "$file" && ! -L "$file" ]] || continue
+      rel="content/${file#"$profile_src/"}"
+      _dest["$rel"]="$file"
+    done < <(find "$profile_src" -type f -print0 | sort -z)
+  done
+}
+
+install_projection_file() {
+  local src="$1" dst="$2" native_rel="$3"
+  local dst_parent tmp marker
+  dst_parent="$(dirname "$dst")"
+  if $DRY_RUN; then
+    echo "  [project] ${dst#"$TARGET/"} generated from .revealui/$native_rel"
+    return 0
+  fi
+  mkdir -p "$dst_parent"
+  if [[ "$MODE" == "copy" ]]; then
+    tmp="$(mktemp)"
+    if [[ "$native_rel" == *.md || "$native_rel" == *.mdx ]]; then
+      marker="<!-- generated from .revealui/${native_rel} -->"
+      { printf '%s\n' "$marker"; cat "$src"; } > "$tmp"
+    else
+      cat "$src" > "$tmp"
+    fi
+    if [[ -f "$dst" && ! -L "$dst" ]] && cmp -s "$tmp" "$dst"; then
+      rm -f "$tmp"
+      ((SKIPPED++)) || true
+      return 0
+    fi
+    rm -f "$dst"
+    mv "$tmp" "$dst"
+    echo "  [project] $(basename "$dst")"
+    ((COPIED++)) || true
+  else
+    if [[ -L "$dst" && "$(readlink "$dst")" == "$src" ]]; then
+      ((SKIPPED++)) || true
+      return 0
+    fi
+    ln -sfn "$src" "$dst"
+    echo "  [project] $(basename "$dst")"
+    ((LINKED++)) || true
+  fi
+}
+
+write_projection_manifest() {
+  local target_dir="$1" editor="$2"
+  local -n nmap=$3
+  local manifest="$target_dir/.revcon-manifest.json"
+  local files_json='{}' existing_json='{}' rel src vendor_rel hash source from entry profiles_json
+  if [[ -f "$manifest" && ! -L "$manifest" ]]; then
+    existing_json="$(jq -c '.files // {}' "$manifest")"
+  fi
+  while IFS= read -r rel; do
+    [[ -n "$rel" ]] || continue
+    [[ -n "${nmap[content/$rel]+x}" ]] && continue
+    [[ -f "$target_dir/$rel" && ! -L "$target_dir/$rel" ]] || continue
+    entry="$(jq -c --arg rel "$rel" '.[$rel]' <<<"$existing_json")"
+    files_json="$(jq -nc --argjson files "$files_json" --arg rel "$rel" --argjson entry "$entry" \
+      '$files + {($rel): $entry}')"
+  done < <(jq -r 'keys[]' <<<"$existing_json")
+  while IFS= read -r rel; do
+    [[ -n "$rel" ]] || continue
+    src="${nmap[$rel]}"
+    vendor_rel="${rel#content/}"
+    hash="$(sha256sum < "$target_dir/$vendor_rel" | cut -d' ' -f1)"
+    source="$(manifest_source "$src")"
+    from=".revealui/$rel"
+    files_json="$(jq -nc --argjson files "$files_json" --arg rel "$vendor_rel" \
+      --arg source "$source" --arg hash "$hash" --arg from "$from" \
+      '$files + {($rel): {source: $source, sha256: $hash, generatedFrom: $from}}')"
+  done < <(printf '%s\n' "${!nmap[@]}" | LC_ALL=C sort)
+  if [[ ${#PROFILES[@]} -eq 0 ]]; then
+    profiles_json='[]'
+  else
+    profiles_json="$(jq -cn --args '$ARGS.positional' "${PROFILES[@]}")"
+  fi
+  jq -Sn --arg editor "$editor" --argjson profiles "$profiles_json" --argjson files "$files_json" \
+    '{mode: "copy", editor: $editor, generatedFrom: ".revealui", profiles: $profiles, files: $files}' > "$manifest"
+  echo "  [manifest] ${manifest#"$TARGET/"}"
+}
+
+# .claude and .grok are generated from the native tree. They are not sources.
+project_native_vendors() {
+  local -A native_map=()
+  local vendor rel src vendor_rel dot target_dir marker_file tmp
+  collect_native_file_map native_map
+  [[ ${#native_map[@]} -gt 0 ]] || return 0
+  for vendor in claude grok; do
+    dot="${EDITOR_DIRS[$vendor]}"
+    target_dir="$TARGET/$dot"
+    echo "[$vendor] projection generated from .revealui/content -> $target_dir"
+    if ! $DRY_RUN; then
+      mkdir -p "$target_dir"
+    fi
+    while IFS= read -r rel; do
+      [[ -n "$rel" ]] || continue
+      src="${native_map[$rel]}"
+      install_projection_file "$src" "$target_dir/${rel#content/}" "$rel"
+    done < <(printf '%s\n' "${!native_map[@]}" | LC_ALL=C sort)
+    marker_file="$target_dir/.generated-from"
+    if ! $DRY_RUN; then
+      tmp="$(mktemp)"
+      {
+        printf '%s\n' "generated from .revealui/content"
+        while IFS= read -r rel; do
+          [[ -n "$rel" ]] || continue
+          printf '%s generated from .revealui/%s\n' "${rel#content/}" "$rel"
+        done < <(printf '%s\n' "${!native_map[@]}" | LC_ALL=C sort)
+      } > "$tmp"
+      if [[ -f "$marker_file" && ! -L "$marker_file" ]] && cmp -s "$tmp" "$marker_file"; then
+        rm -f "$tmp"
+      else
+        rm -f "$marker_file"
+        mv "$tmp" "$marker_file"
+        echo "  [marker] ${marker_file#"$TARGET/"}"
+      fi
+      if [[ "$MODE" == "copy" ]]; then
+        write_projection_manifest "$target_dir" "$vendor" native_map
+      fi
+    fi
+  done
+}
+
+distribute_editors() {
+  case "$EDITOR" in
+    revealui|claude|grok)
+      link_editor revealui
+      if [[ "$EDITOR" == "claude" ]] && ! should_skip_editor claude; then
+        link_editor claude
+      fi
+      ;;
+    all)
+      if native_policy_available; then
+        link_editor revealui
+      fi
+      local e
+      for e in cursor zed vscode claude agents; do
+        if should_skip_editor "$e"; then
+          echo "[$e] skipped (REVCON_SKIP_EDITORS / --skip)"
+          continue
+        fi
+        link_editor "$e"
+      done
+      ;;
+    *)
+      if native_policy_available; then
+        link_editor revealui
+      fi
+      if should_skip_editor "$EDITOR"; then
+        echo "[$EDITOR] skipped (REVCON_SKIP_EDITORS / --skip)"
+      else
+        link_editor "$EDITOR"
+      fi
+      ;;
+  esac
+  if native_policy_available; then
+    project_native_vendors
+  fi
+}
+
 # Run
 echo "Linking editor configs → $TARGET"
 if [[ ${#PROFILES[@]} -gt 0 ]]; then
@@ -525,21 +718,7 @@ if [[ "$EDITOR" != "all" && -z "${EDITOR_DIRS[$EDITOR]+x}" ]]; then
   echo "Error: unknown editor: $EDITOR" >&2; exit 1
 fi
 
-if [[ "$EDITOR" == "all" ]]; then
-  for e in revealui cursor zed vscode claude agents; do
-    if should_skip_editor "$e"; then
-      echo "[$e] skipped (REVCON_SKIP_EDITORS / --skip)"
-      continue
-    fi
-    link_editor "$e"
-  done
-else
-  if should_skip_editor "$EDITOR"; then
-    echo "[$EDITOR] skipped (REVCON_SKIP_EDITORS / --skip)"
-  else
-    link_editor "$EDITOR"
-  fi
-fi
+distribute_editors
 
 echo ""
 
@@ -575,6 +754,14 @@ else
       if [[ "$EDITOR" == "revealui" ]]; then ensure_gitignored ".revealui/content/"; else ensure_gitignored "${EDITOR_DIRS[$EDITOR]}/"; fi
     fi
   fi
+fi
+
+# Native policy and its projections are written even when --editor names
+# another adapter. Ignore those trees in symlink mode once they exist.
+if [[ "$MODE" != "copy" ]]; then
+  [[ -d "$TARGET/.revealui" ]] && ensure_gitignored ".revealui/content/"
+  [[ -d "$TARGET/.claude" ]] && ensure_gitignored ".claude/"
+  [[ -d "$TARGET/.grok" ]] && ensure_gitignored ".grok/"
 fi
 
 echo ""

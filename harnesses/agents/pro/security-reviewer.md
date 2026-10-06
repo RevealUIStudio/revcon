@@ -48,7 +48,7 @@ Audit the codebase for security issues across these categories:
 - **API**: Hono on port 3004. admin calls API cross-origin (CORS configured).
 
 ## Rules
-- Use AST-based analysis over regex for code-shape checks (see .claude/rules/code-analysis-policy.md)
+- Use AST-based analysis over regex for code-shape checks (see .revealui/content/rules/code-analysis-policy.md)
 - Report findings with severity (critical/high/medium/low), file path, and line number
 - Suggest specific fixes, not just descriptions
 - Do NOT modify source code  -  report only

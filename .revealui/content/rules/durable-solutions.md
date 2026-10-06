@@ -1,4 +1,3 @@
-<!-- generated from .revealui/content/rules/durable-solutions.md -->
 # Durable Solutions — Long-Term First, Hotfixes Are Debt
 
 **Status:** convention. Applies to every session, product and internal work

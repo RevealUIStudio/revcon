@@ -39,12 +39,12 @@ revcon/
 │       └── settings.json
 ├── profiles/              # per-project overlays (layered on base)
 │   ├── revealui/
-│   │   ├── agents/        # Claude Code agent definitions
-│   │   ├── claude/        # Claude rules + skills
+│   │   ├── revealui/      # Native rules, agents, and skills (edit here)
+│   │   ├── agents/        # Lockstep skill copies
 │   │   ├── cursor/        # cursor rules
 │   │   └── zed/           # zed-specific overrides
 │   └── revealfleet/
-│       └── claude/rules/  # shared fleet-wide rules
+│       └── revealui/rules/  # shared fleet-wide rules (native)
 └── harnesses/             # full Claude Code harness shipped to targets
     ├── agents/
     ├── commands/
@@ -64,7 +64,7 @@ revcon/
 |---|---|---|
 | `--target <path>` | (required) | Target project directory (where symlinks land) |
 | `--profile <name>` | (none, base only) | Profile to overlay on base; repeatable. `profiles/` ships `revealui` and `revealfleet` today; later `--profile` wins on filename collision. The shortened fleet identity is rejected case-insensitively before public/private lookup and excluded from `./link.sh --list`; no alias resolves to `revealfleet`. |
-| `--editor <name>` | (all) | Limit to one editor: `cursor`, `zed`, `vscode`, `claude`, `agents` |
+| `--editor <name>` | `revealui` | `revealui` (default), `cursor`, `zed`, `vscode`, `claude`, `grok`, `agents`, or `all`. Native content is written first. `.claude` and `.grok` are projections. |
 | `--skip <name>` | (none) | Skip an editor (repeatable; also settable via `REVCON_SKIP_EDITORS`) |
 | `--dry-run` | off | Preview without writing |
 | `--list` | (mode) | Enumerate available profiles, exit |
@@ -109,15 +109,16 @@ For target `~/revealfleet/revealui` with `--profile revealui`:
 ~/revealfleet/revealui/.cursor/rules/...   → revcon/profiles/revealui/cursor/rules/...
 ~/revealfleet/revealui/.zed/settings.json  → revcon/base/zed/settings.json
 ~/revealfleet/revealui/.zed/...override... → revcon/profiles/revealui/zed/...
-~/revealfleet/revealui/.claude/agents/...  → revcon/profiles/revealui/claude/agents/...
-~/revealfleet/revealui/.claude/rules/...   → revcon/profiles/revealui/claude/rules/...
-~/revealfleet/revealui/.claude/skills/...  → revcon/profiles/revealui/claude/skills/...
+~/revealfleet/revealui/.revealui/content/agents/...  → revcon/profiles/revealui/revealui/agents/...
+~/revealfleet/revealui/.revealui/content/rules/...   → revcon/profiles/revealui/revealui/rules/...
+~/revealfleet/revealui/.revealui/content/skills/...  → revcon/profiles/revealui/revealui/skills/...
+~/revealfleet/revealui/.claude/...                   generated from .revealui/content
+~/revealfleet/revealui/.grok/...                     generated from .revealui/content
 ```
 
-This is produced by `--editor claude` (mapped to `.claude/` via `link.sh`'s
-`EDITOR_DIRS`). `--editor agents` symlinks `.agents/` from
-`profiles/<profile>/agents/` the same way. Neither editor touches
-`harnesses/*`; see "Behavior" above.
+Native content is the source. `.claude` and `.grok` are generated projections,
+each marked `generated from .revealui`. `--editor agents` symlinks `.agents/`
+from `profiles/<profile>/agents/`. `link.sh` does not link `harnesses/*`.
 
 Profile overrides win over base (when both define the same target path).
 
@@ -129,7 +130,7 @@ A profile is a directory under `profiles/<name>/`. Convention:
 
 - `cursor/` — Cursor-specific overlay
 - `zed/` — Zed-specific overlay
-- `claude/` — Claude Code rules + skills
+- `revealui/` holds native rules, agents, and skills (canonical edit path)
 - `agents/` — agent definitions
 
 Adding a new profile = create the directory + populate it. No manifest file required (intentionally low-ceremony).

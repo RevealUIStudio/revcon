@@ -23,7 +23,7 @@ RevealUI is launched. Work now includes:
 
 - You are one of potentially multiple Claude Code agents working on this repo
 - ALL agents share the hub master plan as their single source of truth
-- Before making architectural decisions, check the workboard (`.claude/workboard.md`) for other active agents
+- Before making architectural decisions, check the workboard (`.revealui/workboard.md`) for other active agents
 - If another agent is working on a related area, coordinate via the workboard Context section
 - NEVER create plan documents outside of the hub master plan — ephemeral session plans are OK but must not be treated as durable
 

@@ -133,6 +133,9 @@ test_copy_mode_manifest_and_drift() {
   local name_materialize="copy-mode materializes files with a .revcon-manifest.json"
   local name_drift="sha256 drift check in status.sh detects a locally modified file"
   setup_fixture_repo
+  mkdir -p "$FIXTURE_REVCON/profiles/testprofile/revealui/agents"
+  cp "$FIXTURE_REVCON/profiles/testprofile/claude/agents/one.md" \
+    "$FIXTURE_REVCON/profiles/testprofile/revealui/agents/one.md"
   local target="$TMP_ROOT/t2-target"
   mkdir -p "$target"
 
@@ -233,7 +236,9 @@ test_status_in_sync_and_drifted() {
   fi
 
   local target_copy="$TMP_ROOT/t4-copy-target"
-  mkdir -p "$target_copy"
+  mkdir -p "$target_copy" "$FIXTURE_REVCON/profiles/testprofile/revealui/agents"
+  cp "$FIXTURE_REVCON/profiles/testprofile/claude/agents/one.md" \
+    "$FIXTURE_REVCON/profiles/testprofile/revealui/agents/one.md"
   run_script link.sh --target "$target_copy" --profile testprofile --editor claude --mode copy >/dev/null 2>&1
 
   local json_copy drifted
@@ -384,22 +389,25 @@ test_status_default_scan_ignores_home_roots() {
 test_canonical_fleet_profile() {
   local name="canonical fleet profile distributes without an alias"
   setup_fixture_repo
-  mkdir -p "$FIXTURE_REVCON/profiles/revealfleet/claude"
-  echo 'fleet rule' > "$FIXTURE_REVCON/profiles/revealfleet/claude/rule.md"
+  mkdir -p "$FIXTURE_REVCON/profiles/revealfleet/revealui/rules"
+  echo 'fleet rule' > "$FIXTURE_REVCON/profiles/revealfleet/revealui/rules/rule.md"
   local target="$TMP_ROOT/t-fleet"
   mkdir -p "$target"
-  local out manifest="$target/.claude/.revcon-manifest.json"
+  local out manifest="$target/.revealui/.revcon-manifest.json"
   if ! out="$(run_script link.sh --target "$target" --profile revealfleet --editor claude --mode copy 2>&1)"; then
     fail "$name (copy failed: $out)"; return
   fi
   local ok=true
-  jq -e '.profiles == ["revealfleet"] and .files["rule.md"].source == "profiles/revealfleet/claude/rule.md"' "$manifest" >/dev/null || ok=false
-  [[ "$(cat "$target/.claude/rule.md")" == 'fleet rule' ]] || ok=false
+  jq -e '.editor == "revealui" and .profiles == ["revealfleet"] and .files["content/rules/rule.md"].source == "profiles/revealfleet/revealui/rules/rule.md"' "$manifest" >/dev/null || ok=false
+  [[ "$(cat "$target/.revealui/content/rules/rule.md")" == 'fleet rule' ]] || ok=false
+  jq -e '.generatedFrom == ".revealui" and .files["rules/rule.md"].generatedFrom == ".revealui/content/rules/rule.md"' "$target/.claude/.revcon-manifest.json" >/dev/null || ok=false
+  [[ -f "$target/.grok/.generated-from" ]] || ok=false
   run_script link.sh --target "$target" --profile revealfleet --editor claude --mode copy >/dev/null 2>&1 || ok=false
   local linked="$TMP_ROOT/t-fleet-link"
   mkdir -p "$linked"
   run_script link.sh --target "$linked" --profile revealfleet --editor claude >/dev/null 2>&1 || ok=false
-  [[ "$(readlink "$linked/.claude/rule.md")" == "$FIXTURE_REVCON/profiles/revealfleet/claude/rule.md" ]] || ok=false
+  [[ "$(readlink "$linked/.revealui/content/rules/rule.md")" == "$FIXTURE_REVCON/profiles/revealfleet/revealui/rules/rule.md" ]] || ok=false
+  [[ "$(readlink "$linked/.claude/rules/rule.md")" == "$FIXTURE_REVCON/profiles/revealfleet/revealui/rules/rule.md" ]] || ok=false
   local listed
   listed="$(run_script link.sh --list)"
   [[ "$listed" == *"revealfleet"* && "$listed" != *"alias"* ]] || ok=false
@@ -535,6 +543,9 @@ test_link_idempotent_copy_mode() {
   local target="$TMP_ROOT/t5b-target"
   mkdir -p "$target"
 
+  mkdir -p "$FIXTURE_REVCON/profiles/testprofile/revealui/agents"
+  cp "$FIXTURE_REVCON/profiles/testprofile/claude/agents/one.md" \
+    "$FIXTURE_REVCON/profiles/testprofile/revealui/agents/one.md"
   run_script link.sh --target "$target" --profile testprofile --editor claude --mode copy >/dev/null 2>&1
   local manifest="$target/.claude/.revcon-manifest.json"
   local before
@@ -614,7 +625,9 @@ test_native_policy_distribution() {
   local target="$TMP_ROOT/native-policy" ok=true out before after
   mkdir -p "$target"
   run_script link.sh --target "$target" --profile revealfleet --mode copy >/dev/null 2>&1 || ok=false
-  [[ -f "$target/.revealui/content/rules/policy.md" && ! -e "$target/.claude" && ! -e "$target/.cursor" && ! -e "$target/.zed" && ! -e "$target/.agents" && ! -e "$target/.vscode" ]] || ok=false
+  [[ -f "$target/.revealui/content/rules/policy.md" && -f "$target/.claude/.generated-from" && -f "$target/.grok/.generated-from" && ! -e "$target/.cursor" && ! -e "$target/.zed" && ! -e "$target/.agents" && ! -e "$target/.vscode" ]] || ok=false
+  grep -q 'generated from .revealui/content' "$target/.claude/.generated-from" || ok=false
+  grep -q 'generated from .revealui/content' "$target/.grok/.generated-from" || ok=false
   local manifest="$target/.revealui/.revcon-manifest.json"
   jq -e '.editor == "revealui" and .files["content/rules/policy.md"].source == "profiles/revealfleet/revealui/rules/policy.md"' "$manifest" >/dev/null || ok=false
   before="$(cat "$manifest")"
@@ -661,7 +674,7 @@ test_native_policy_real_profile() {
   run_script link.sh --target "$target" --profile revealfleet --editor revealui --mode copy >/dev/null 2>&1 || ok=false
   jq -e '.editor == "revealui" and (.files | length == 14) and all(.files | to_entries[]; (.key | startswith("content/rules/")) and (.value.source | startswith("profiles/revealfleet/revealui/rules/")))' "$target/.revealui/.revcon-manifest.json" >/dev/null || ok=false
   run_script status.sh --target "$target" --editor revealui --verify >/dev/null 2>&1 || ok=false
-  [[ ! -e "$target/.claude" ]] || ok=false
+  [[ -f "$target/.claude/.generated-from" && -f "$target/.grok/.generated-from" ]] || ok=false
   $ok && pass "$name" || fail "$name"
 }
 
@@ -687,11 +700,15 @@ test_native_policy_claude_projection() {
   echo 'vendor only' > "$FIXTURE_REVCON/profiles/revealfleet/claude/rules/unique.md"
   local target="$TMP_ROOT/native-projection" ok=true
   mkdir -p "$target"
-  run_script link.sh --target "$target" --profile revealfleet --editor claude --mode copy >/dev/null 2>&1 || ok=false
-  [[ "$(cat "$target/.claude/rules/policy.md")" == 'native policy' ]] || ok=false
+  out="$(run_script link.sh --target "$target" --profile revealfleet --editor claude --mode copy 2>&1)" || ok=false
+  [[ "$out" == *"[revealui]"* && "$out" == *"[claude]"* && "$out" == *"[grok]"* ]] || ok=false
+  [[ "${out%%\[claude\]*}" == *"[revealui]"* && "${out%%\[grok\]*}" == *"[revealui]"* ]] || ok=false
+  [[ -f "$target/.revealui/content/rules/policy.md" ]] || ok=false
+  [[ "$(tail -n +2 "$target/.claude/rules/policy.md")" == 'native policy' ]] || ok=false
   [[ "$(cat "$target/.claude/rules/unique.md")" == 'vendor only' ]] || ok=false
-  [[ ! -e "$target/.revealui" ]] || ok=false
-  jq -e '.files["rules/policy.md"].source == "profiles/revealfleet/revealui/rules/policy.md" and .files["rules/unique.md"].source == "profiles/revealfleet/claude/rules/unique.md"' "$target/.claude/.revcon-manifest.json" >/dev/null || ok=false
+  grep -q 'generated from .revealui/content' "$target/.claude/.generated-from" || ok=false
+  grep -q 'generated from .revealui/content' "$target/.grok/.generated-from" || ok=false
+  jq -e '.generatedFrom == ".revealui" and .files["rules/policy.md"].source == "profiles/revealfleet/revealui/rules/policy.md" and .files["rules/policy.md"].generatedFrom == ".revealui/content/rules/policy.md" and .files["rules/unique.md"].source == "profiles/revealfleet/claude/rules/unique.md"' "$target/.claude/.revcon-manifest.json" >/dev/null || ok=false
   run_script status.sh --target "$target" --editor claude --verify >/dev/null 2>&1 || ok=false
   $ok && pass "$name" || fail "$name"
 }
@@ -749,6 +766,13 @@ test_canonical_private_profile_provenance
 test_private_scanner_covers_named_parents
 test_link_idempotent_symlink_mode
 test_link_idempotent_copy_mode
+
+echo ""
+if bash "$REPO_ROOT/test/native-first.test.sh"; then
+  pass "native-first projection fixtures"
+else
+  fail "native-first projection fixtures"
+fi
 
 echo ""
 if python3 "$REPO_ROOT/test/workflow-distribution.test.py"; then

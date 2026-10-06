@@ -1,4 +1,3 @@
-<!-- generated from .revealui/content/rules/opensrc.md -->
 # opensrc — Package Source Context
 
 ## What It Is

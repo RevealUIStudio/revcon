@@ -1,4 +1,3 @@
-<!-- generated from .revealui/content/rules/git.md -->
 # Git Conventions
 
 ## Commit Messages

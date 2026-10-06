@@ -1,4 +1,3 @@
-<!-- generated from .revealui/content/rules/token-economy.md -->
 # Token Economy — Spend Tokens Only Where They Buy Value
 
 **Status:** convention, owner directive 2026-07-16. Governs the *amount of work*
