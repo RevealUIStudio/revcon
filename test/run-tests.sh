@@ -417,11 +417,82 @@ test_removed_fleet_alias_rejected() {
   local removed='revfleet' out
   if out="$(run_script link.sh --target "$target" --profile "$removed" --editor claude 2>&1)"; then
     fail "$name (unexpected acceptance)"
-  elif [[ "$out" == *"profile not found"* && ! -e "$target/.claude" && ! -e "$target/.gitignore" ]]; then
+  elif [[ "$out" == *"shortened fleet identity"* && ! -e "$target/.claude" && ! -e "$target/.gitignore" ]]; then
     pass "$name"
   else
     fail "$name (unexpected error or mutation: $out)"
   fi
+}
+
+test_removed_fleet_names_never_resolve() {
+  local removed mode source target out name rc index=0 private="$TMP_ROOT/private-profile-names"
+  for removed in revfleet REVFLEET RevFleet rEvFlEeT ./RevFleet RevFleet/ nested/../RevFleet; do
+    for source in public private; do
+      setup_fixture_repo
+      mkdir -p "$private/$removed/revealui/rules" "$FIXTURE_REVCON/profiles/$removed/revealui/rules"
+      echo 'unapproved private identity' > "$private/$removed/revealui/rules/policy.md"
+      echo 'unapproved public identity' > "$FIXTURE_REVCON/profiles/$removed/revealui/rules/policy.md"
+      for mode in symlink copy; do
+        index=$((index + 1))
+        target="$TMP_ROOT/rejected-profile-$index"
+        mkdir -p "$target"
+        name="shortened $source profile $removed is denied before $mode output"
+        rc=0
+        if [[ "$source" == private ]]; then
+          out="$(env -u REVCON_SKIP_EDITORS REVCON_PRIVATE_PROFILES_DIR="$private" \
+            bash "$FIXTURE_REVCON/link.sh" --target "$target" --profile "$removed" --mode "$mode" 2>&1)" || rc=$?
+        else
+          out="$(run_script link.sh --target "$target" --profile "$removed" --mode "$mode" 2>&1)" || rc=$?
+        fi
+        if [[ "$rc" -ne 0 && "$out" == *"shortened fleet identity"* && ! -e "$target/.revealui" && ! -e "$target/.gitignore" ]]; then
+          pass "$name"
+        else
+          fail "$name (accepted or mutated: $out)"
+        fi
+      done
+    done
+  done
+}
+
+test_profile_list_omits_removed_names() {
+  local name="profile list omits shortened public/private identities and keeps canonical names"
+  setup_fixture_repo
+  local private="$TMP_ROOT/private-profile-list" removed listed ok=true
+  mkdir -p "$FIXTURE_REVCON/profiles/revealfleet" "$private/revealfleet" "$private/other"
+  for removed in revfleet REVFLEET RevFleet rEvFlEeT; do
+    mkdir -p "$FIXTURE_REVCON/profiles/$removed" "$private/$removed"
+  done
+  listed="$(env -u REVCON_SKIP_EDITORS REVCON_PRIVATE_PROFILES_DIR="$private" bash "$FIXTURE_REVCON/link.sh" --list)" || ok=false
+  [[ "$listed" == *"revealfleet"* && "$listed" == *"revealfleet (private)"* && "$listed" == *"other (private)"* ]] || ok=false
+  for removed in revfleet REVFLEET RevFleet rEvFlEeT; do
+    [[ "$listed" != *"$removed"* ]] || ok=false
+  done
+  if $ok; then pass "$name"; else fail "$name (output=$listed)"; fi
+}
+
+test_canonical_private_profile_provenance() {
+  local name="canonical private overlay keeps manifest/status/lockstep provenance"
+  setup_fixture_repo
+  local private="$TMP_ROOT/private-canonical" target="$TMP_ROOT/private-canonical-target" ok=true manifest before after
+  mkdir -p "$FIXTURE_REVCON/profiles/revealfleet/revealui/rules" "$private/revealfleet/revealui/rules" "$target"
+  echo 'public canonical policy' > "$FIXTURE_REVCON/profiles/revealfleet/revealui/rules/policy.md"
+  echo 'private canonical policy' > "$private/revealfleet/revealui/rules/policy.md"
+  git -C "$target" init -q
+  env -u REVCON_SKIP_EDITORS REVCON_PRIVATE_PROFILES_DIR="$private" bash "$FIXTURE_REVCON/link.sh" \
+    --target "$target" --profile revealfleet --mode copy >/dev/null 2>&1 || ok=false
+  manifest="$target/.revealui/.revcon-manifest.json"
+  jq -e '.profiles == ["revealfleet"] and .files["content/rules/policy.md"].source == "private:revealfleet/revealui/rules/policy.md"' "$manifest" >/dev/null || ok=false
+  [[ "$(cat "$target/.revealui/content/rules/policy.md")" == 'private canonical policy' ]] || ok=false
+  before="$(cat "$manifest")"
+  env -u REVCON_SKIP_EDITORS REVCON_PRIVATE_PROFILES_DIR="$private" bash "$FIXTURE_REVCON/link.sh" \
+    --target "$target" --profile revealfleet --mode copy >/dev/null 2>&1 || ok=false
+  after="$(cat "$manifest")"
+  [[ "$before" == "$after" ]] || ok=false
+  env -u REVCON_SKIP_EDITORS REVCON_PRIVATE_PROFILES_DIR="$private" bash "$FIXTURE_REVCON/status.sh" \
+    --target "$target" --editor revealui --verify >/dev/null 2>&1 || ok=false
+  git -C "$target" add .revealui
+  bash "$REPO_ROOT/scripts/verify-copy-lockstep.sh" --target "$target" --dot .revealui >/dev/null 2>&1 || ok=false
+  if $ok; then pass "$name"; else fail "$name"; fi
 }
 
 # ---------------------------------------------------------------------------
@@ -672,6 +743,9 @@ test_private_scanner_accepts_public_author_identity
 test_status_default_scan_ignores_home_roots
 test_canonical_fleet_profile
 test_removed_fleet_alias_rejected
+test_removed_fleet_names_never_resolve
+test_profile_list_omits_removed_names
+test_canonical_private_profile_provenance
 test_private_scanner_covers_named_parents
 test_link_idempotent_symlink_mode
 test_link_idempotent_copy_mode
