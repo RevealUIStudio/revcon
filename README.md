@@ -1,8 +1,9 @@
 # revcon
 
-Centralized editor configurations for RevealUI projects. Configs are symlinked
-into target projects — edits propagate instantly, nothing gets committed to
-target repos.
+Centralized editor configurations for RevealUI projects. The maintained
+distributor materializes portable copies by default and records their ownership.
+Reapply after canonical edits, and commit generated artifacts with the target
+project. Legacy symlink mode remains explicit.
 
 ## Quick Start
 
@@ -89,7 +90,7 @@ profile `SKILL.md` files.
 ## How It Works
 
 1. **`link.sh`** creates real directories (`.zed/`, `.cursor/`) in the target project
-2. Individual config files are symlinked from `base/` into those directories
+2. Individual config files are copied from `base/` into those directories
 3. `--profile` is repeatable. Profiles overlay on top of `base/` in the order
    given, and later profiles override earlier ones on filename collisions
    (`base` → first `--profile` → second `--profile` → ...):
@@ -99,7 +100,7 @@ profile `SKILL.md` files.
    The canonical fleet profile is `revealfleet`. `./link.sh --list` names a
    deprecated alias when one still resolves to that profile.
 4. Editor-written state (cache, chat history) stays in the real directory, not here
-5. `.gitignore` is updated so symlinked dirs are never committed
+5. Copy manifests record ownership and hashes. Existing unowned or modified copies are preserved and block application. Explicit legacy symlink mode updates `.gitignore`.
 
 ## Copy Mode (materialized, git-tracked)
 
@@ -111,7 +112,7 @@ to travel with the repo, use copy mode:
 ./link.sh --target ~/revealfleet/revealui --profile revealfleet --profile revealui --mode copy
 ```
 
-Copy mode materializes real files instead of symlinks, writes a deterministic
+Copy mode is the default. It materializes real files instead of symlinks and writes a deterministic
 `<dot_dir>/.revcon-manifest.json` (per-file profile source + sha256), and does
 NOT add a `.gitignore` entry: the target repo tracks the copies and gates
 drift with a lockstep check against the manifest (revealui:
@@ -309,3 +310,16 @@ generates `.claude` and `.grok` from that native tree, with a
 `generated from .revealui` marker on each projection. Native policy wins
 collisions. Do not hand-copy or edit installed policy. Edit its owning profile
 and use the maintained materializer.
+
+## Native Codex ownership
+
+RevealUI harness definitions own generated native skills through the project
+`.revealui/adapters/codex-files.json` ledger. The agents distributor verifies
+those files and excludes them from profile delivery. Profile-only skills retain
+one owner in `.agents/.revcon-manifest.json`. The copy-lockstep gate validates
+both ledgers and rejects overlapping ownership. Native Codex projects require
+copy delivery. Recognized legacy profile links can migrate after relocation;
+foreign links, linked parents, and unowned or modified files block application.
+
+Canonical edits must be materialized through the owning maintained tool.
+Generated copies and manifests travel with the project checkout.

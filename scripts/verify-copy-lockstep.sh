@@ -140,6 +140,29 @@ while IFS=$'\t' read -r rel src want; do
   fi
 done < <(jq -r '.files | to_entries[] | [.key, .value.source, .value.sha256] | @tsv' "$MANIFEST")
 
+# Native Codex artifacts have one separate owner: the harness materializer.
+# Validate that ownership rather than treating its tracked files as strays.
+if [[ "$DOT" == ".agents" && -f "$TARGET/.revealui/adapters/codex-files.json" ]]; then
+  harness_manifest="$TARGET/.revealui/adapters/codex-files.json"
+  if [[ -L "$harness_manifest" ]] || ! jq -e '.version == 1 and (.files | type == "object")' "$harness_manifest" >/dev/null; then
+    echo "Invalid native Codex ownership manifest" >&2
+    exit 1
+  fi
+  while IFS=$'\t' read -r file_rel want; do
+    if [[ "$file_rel" != .agents/skills/* || "$file_rel" == */../* || "$file_rel" =~ [[:cntrl:]] || -n "${manifest_paths[$file_rel]+x}" ]]; then
+      echo "Invalid or multiply owned native skill path: $file_rel" >&2
+      problems=$((problems + 1))
+      continue
+    fi
+    manifest_paths["$file_rel"]=1
+    abs="$TARGET/$file_rel"
+    if [[ ! -f "$abs" || -L "$abs" || "$(realpath -m -- "$abs")" != "$abs" || "$(hash_file "$abs")" != "$want" ]]; then
+      echo "Missing, linked, or modified native skill: $file_rel" >&2
+      problems=$((problems + 1))
+    fi
+  done < <(jq -r '.files | to_entries[] | [.key, .value] | @tsv' "$harness_manifest")
+fi
+
 # Strays: git-tracked under materialized dirs but not in the manifest
 if git -C "$TARGET" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   pathspecs=()

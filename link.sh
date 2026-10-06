@@ -32,7 +32,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 TARGET=""
 PROFILES=()
 EDITOR="revealui"
-MODE="symlink"
+MODE="copy"
 DRY_RUN=false
 SKIP_EDITORS="${REVCON_SKIP_EDITORS:-}"
 PRIVATE_PROFILES_DIR="${REVCON_PRIVATE_PROFILES_DIR:-}"
@@ -57,7 +57,7 @@ Options:
   --editor NAME    Editor to link: revealui, cursor, zed, vscode, claude, grok, agents, all (default: revealui)
                    revealui is always written first when native sources exist.
                    .claude and .grok are projections of that native tree.
-  --mode NAME      Distribution mode: symlink (default) or copy. Copy mode
+  --mode NAME      Distribution mode: copy (default) or legacy symlink. Copy mode
                    materializes real files so the target repo can git-track
                    them, writes <dot_dir>/.revcon-manifest.json (per-file
                    source + sha256), and does NOT gitignore the dot-dir.
@@ -306,6 +306,7 @@ write_manifest() {
   profiles_json="$(jq -cn --args '$ARGS.positional' "${PROFILES[@]}")"
   while IFS= read -r -d '' rel; do
     [[ -n "${PRESERVED_NATIVE[$rel]+x}" ]] && continue
+    [[ -n "$rel" ]] || continue
     src="${fmap[$rel]}"
     hash="$(sha256sum < "$src" | cut -d' ' -f1)"
     files_json="$(jq -cn --argjson files "$files_json" --arg rel "$rel" \
@@ -358,6 +359,10 @@ link_editor() {
   local target_dir="$TARGET/$dot_dir"
   local prefix=""
   [[ "$editor" == "revealui" ]] && prefix="content/"
+  if [[ "$MODE" == "copy" && -L "$target_dir/.revcon-manifest.json" ]]; then
+    echo "Error: copy ownership manifest must be a regular file" >&2
+    exit 1
+  fi
 
   # Check if there are any files to link for this editor
   local has_base=false
@@ -464,6 +469,63 @@ link_editor() {
       fi
     fi
   done
+
+  # The harness package owns its native Codex delivery. RevCon continues to
+  # deliver profile-only skills, without becoming a second owner of the pack.
+  if [[ "$editor" == "agents" && -f "$TARGET/.revealui/adapters/codex-files.json" ]]; then
+    local harness_manifest="$TARGET/.revealui/adapters/codex-files.json"
+    if [[ -L "$harness_manifest" ]] || ! jq -e '.version == 1 and (.files | type == "object")' "$harness_manifest" >/dev/null; then
+      echo "Error: invalid Codex delivery ownership manifest" >&2
+      exit 1
+    fi
+    for rel in "${!file_map[@]}"; do
+      local harness_hash
+      harness_hash="$(jq -r --arg path ".agents/$rel" '.files[$path] // empty' "$harness_manifest")"
+      [[ -n "$harness_hash" ]] || continue
+      local harness_file="$target_dir/$rel"
+      if [[ ! -f "$harness_file" || -L "$harness_file" || "$(realpath -m -- "$harness_file")" != "$harness_file" || "$(sha256sum < "$harness_file" | cut -d' ' -f1)" != "$harness_hash" ]]; then
+        echo "Error: preserving modified harness-owned skill: $harness_file" >&2
+        exit 1
+      fi
+      unset 'file_map[$rel]'
+    done
+    if [[ "$MODE" != "copy" ]]; then
+      echo "Error: native Codex projects require portable copy delivery" >&2
+      exit 1
+    fi
+  fi
+
+  # Profile skills use the same ownership-preserving migration contract as
+  # shared workflow documents. Preflight all files before replacing any.
+  if [[ "$MODE" == "copy" || "$editor" == "agents" ]]; then
+    for rel in "${!file_map[@]}"; do
+      [[ "$rel" == "${SHARED_WORKFLOW_DIRS[$editor]}/"* ]] && continue
+      local dst="$target_dir/$rel" resolved
+      resolved="$(realpath -m -- "$(dirname "$dst")")/$(basename "$dst")"
+      if [[ "$rel" =~ [[:cntrl:]] || -L "$target_dir" || "$resolved" != "$dst" || "$rel" == ../* || "$rel" == */../* ]]; then
+        echo "Error: unsafe native skill destination: $dst" >&2
+        exit 1
+      fi
+      if [[ -L "$dst" ]]; then
+        local source_rel existing
+        source_rel="${file_map[$rel]#"$SCRIPT_DIR/"}"
+        existing="$(readlink "$dst")"
+        if [[ "$existing" != "${file_map[$rel]}" && "$existing" != */revcon/"$source_rel" ]]; then
+          echo "Error: preserving foreign native skill symlink: $dst" >&2
+          exit 1
+        fi
+      elif [[ -e "$dst" ]]; then
+        local copy_manifest="$target_dir/.revcon-manifest.json" previous_hash=""
+        if [[ -f "$copy_manifest" && ! -L "$copy_manifest" ]]; then
+          previous_hash="$(jq -r --arg rel "$rel" '.files[$rel].sha256 // empty' "$copy_manifest")"
+        fi
+        if [[ ! -f "$dst" || -z "$previous_hash" || "$(sha256sum < "$dst" | cut -d' ' -f1)" != "$previous_hash" ]]; then
+          echo "Error: preserving unowned or modified native skill: $dst" >&2
+          exit 1
+        fi
+      fi
+    done
+  fi
 
   # Shared/manual documents preserve user ownership during migration. A copy
   # is managed only while its manifest hash still matches; external symlinks
