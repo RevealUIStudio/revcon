@@ -340,6 +340,17 @@ test_status_json_escapes_target_path() {
   fi
 }
 
+# Assemble the example placeholder at runtime so this tracked file does not
+# contain the literal the scanner is asked to find.
+client_leak_placeholder_token() {
+  local left=acme right=placeholder
+  printf '%s-%s' "$left" "$right"
+}
+
+client_leak_placeholder_line() {
+  printf 'example-tag|%s|example' "$(client_leak_placeholder_token)"
+}
+
 test_client_scanner_rejects_grep_failure() {
   local name="client leak scanner rejects an incomplete grep scan"
   local fakebin="$TMP_ROOT/fakebin"
@@ -349,8 +360,74 @@ test_client_scanner_rejects_grep_failure() {
   local target="$TMP_ROOT/client-scan"
   mkdir -p "$target"
   local out rc=0
-  out="$(PATH="$fakebin:$PATH" bash "$REPO_ROOT/scripts/check-client-leaks.sh" "$target" 2>&1)" || rc=$?
+  out="$(
+    env CLIENT_LEAK_PATTERNS="$(client_leak_placeholder_line)" \
+      PATH="$fakebin:$PATH" \
+      bash "$REPO_ROOT/scripts/check-client-leaks.sh" "$target" 2>&1
+  )" || rc=$?
   if [[ "$rc" -eq 2 && "$out" == *"could not complete"* ]]; then
+    pass "$name"
+  else
+    fail "$name (exit=$rc output=$out)"
+  fi
+}
+
+test_client_scanner_fails_closed_without_secret_in_ci() {
+  local name="client leak scanner fails closed when CI has no pattern secret"
+  local target="$TMP_ROOT/client-scan-ci-empty"
+  mkdir -p "$target"
+  printf '%s\n' "$(client_leak_placeholder_token)" > "$target/note.txt"
+  local watch="$REPO_ROOT/.client-name-watchlist.local"
+  local created=0
+  if [[ ! -e "$watch" ]]; then
+    printf '%s\n' "$(client_leak_placeholder_line)" > "$watch"
+    created=1
+  fi
+  local out rc=0
+  out="$(
+    env -u CLIENT_LEAK_PATTERNS CI=true GITHUB_ACTIONS=true \
+      bash "$REPO_ROOT/scripts/check-client-leaks.sh" "$target" 2>&1
+  )" || rc=$?
+  if (( created == 1 )); then
+    rm -f "$watch"
+  fi
+  if [[ "$rc" -eq 2 && "$out" == *"CLIENT_LEAK_PATTERNS"* && "$out" != *"[client-leak] OK"* ]]; then
+    pass "$name"
+  else
+    fail "$name (exit=$rc output=$out)"
+  fi
+}
+
+test_client_scanner_passes_with_placeholder_pattern() {
+  local name="client leak scanner accepts a placeholder pattern on a clean tree"
+  local target="$TMP_ROOT/client-scan-clean"
+  mkdir -p "$target"
+  printf 'nothing to see\n' > "$target/note.txt"
+  printf '%s\n' "$(client_leak_placeholder_line)" > "$target/.client-name-watchlist.local"
+  local out rc=0
+  out="$(
+    env CLIENT_LEAK_PATTERNS="$(client_leak_placeholder_line)" \
+      bash "$REPO_ROOT/scripts/check-client-leaks.sh" "$target" 2>&1
+  )" || rc=$?
+  if [[ "$rc" -eq 0 && "$out" == *"[client-leak] OK"* ]]; then
+    pass "$name"
+  else
+    fail "$name (exit=$rc output=$out)"
+  fi
+}
+
+test_client_scanner_still_flags_placeholder_outside_watchlist() {
+  local name="client leak scanner still flags a placeholder outside the local watchlist"
+  local target="$TMP_ROOT/client-scan-hit"
+  mkdir -p "$target"
+  printf '%s\n' "$(client_leak_placeholder_line)" > "$target/.client-name-watchlist.local"
+  printf 'see %s here\n' "$(client_leak_placeholder_token)" > "$target/note.txt"
+  local out rc=0
+  out="$(
+    env CLIENT_LEAK_PATTERNS="$(client_leak_placeholder_line)" \
+      bash "$REPO_ROOT/scripts/check-client-leaks.sh" "$target" 2>&1
+  )" || rc=$?
+  if [[ "$rc" -eq 1 && "$out" == *"[CLIENT-LEAK:example-tag]"* && "$out" == *"note.txt"* ]]; then
     pass "$name"
   else
     fail "$name (exit=$rc output=$out)"
@@ -739,6 +816,9 @@ test_status_rejects_empty_or_multiple_manifests
 test_status_copy_manifest_keeps_special_path_bytes
 test_status_json_escapes_target_path
 test_client_scanner_rejects_grep_failure
+test_client_scanner_fails_closed_without_secret_in_ci
+test_client_scanner_passes_with_placeholder_pattern
+test_client_scanner_still_flags_placeholder_outside_watchlist
 test_private_scanner_accepts_public_author_identity
 test_status_default_scan_ignores_home_roots
 test_canonical_fleet_profile

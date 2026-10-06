@@ -6,6 +6,10 @@ Thumbs.db
 *.log
 *.local
 
+# Local client / prospect pattern list for scripts/check-client-leaks.sh.
+# CI does not read this file. It uses the CLIENT_LEAK_PATTERNS org secret.
+.client-name-watchlist.local
+
 # Claude Code per-developer state (settings.local.json, session caches,
 # worktrees). Materialized rules/agents/skills are tracked (GAP-372 copy-mode);
 # keep local state ignored so it cannot bypass the Private Leak Scan gate.

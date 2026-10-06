@@ -3,6 +3,9 @@ name: Issue + PR Body Leak Scan
 # Thin caller — logic in org-shared reusable workflow:
 #   RevealUIStudio/.github/.github/workflows/issue-leak-scan-reusable.yml
 # Requires .gitleaks.issues.toml on this repo's default branch.
+# Client / prospect name rules are not in that file. The shared workflow
+# has no secret input, so those literals stay out of git. Tracked files
+# are covered by check-client-leaks.yml via the CLIENT_LEAK_PATTERNS secret.
 
 on:
   issues:
