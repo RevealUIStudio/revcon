@@ -203,12 +203,22 @@ validate_harness_rules() {
   if [[ -L "$ownership" ]] || ! jq -e '.mode == "copy" and .editor == "claude" and (.files | type == "object") and all(.files[]; (.source | type == "string") and (.sha256 | type == "string"))' "$ownership" >/dev/null; then
     echo "Error: invalid Claude ownership manifest" >&2; exit 1
   fi
-  local owned_rel owned_source owned_hash owned_file
+  local owned_rel owned_source owned_hash owned_file expected_source canonical content_root
+  content_root="$(jq -r '.contentRoot // "content"' "$TARGET/.revealui/manager.json" 2>/dev/null || echo content)"
   while IFS=$'\t' read -r owned_rel owned_source owned_hash; do
     [[ "$owned_source" == harnesses:* ]] || continue
     owned_file="$TARGET/.claude/$owned_rel"
-    if [[ "$MODE" != "copy" || "$owned_rel" != rules/*.md || "${owned_rel#rules/}" == */* || "$owned_rel" =~ [[:cntrl:]] || "$owned_source" != "harnesses:$owned_rel" || ! -f "$owned_file" || -L "$owned_file" || "$(realpath -m -- "$owned_file")" != "$owned_file" || "$(sha256sum < "$owned_file" | cut -d' ' -f1)" != "$owned_hash" ]]; then
+    expected_source="harnesses:$owned_rel"
+    canonical="$TARGET/.revealui/$content_root/$owned_rel"
+    if [[ "$owned_rel" == "rules/00-revealui-manager.md" ]]; then
+      expected_source="harnesses:adapters/claude-code.md"
+      canonical="$TARGET/.revealui/adapters/claude-code.md"
+    fi
+    if [[ "$MODE" != "copy" || "$owned_rel" != rules/*.md || "${owned_rel#rules/}" == */* || "$owned_rel" =~ [[:cntrl:]] || "$owned_source" != "$expected_source" || ! -f "$owned_file" || -L "$owned_file" || "$(realpath -m -- "$owned_file")" != "$owned_file" || "$(sha256sum < "$owned_file" | cut -d' ' -f1)" != "$owned_hash" ]]; then
       echo "Error: invalid or modified harness-owned Claude rule" >&2; exit 1
+    fi
+    if [[ ! -f "$canonical" || -L "$canonical" || "$(realpath -m -- "$canonical")" != "$canonical" || "$(sha256sum < "$canonical" | cut -d' ' -f1)" != "$owned_hash" ]]; then
+      echo "Error: harness-owned Claude content differs from its canonical source" >&2; exit 1
     fi
     HARNESS_RULES["$owned_rel"]=1
   done < <(jq -r '.files | to_entries[] | [.key, .value.source, .value.sha256] | @tsv' "$ownership")
