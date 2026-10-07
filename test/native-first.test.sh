@@ -68,7 +68,7 @@ test_default_run() {
     fail "default run writes native first (link failed: $out)"
     return
   fi
-  assert_native_first "default run writes native first" "$out" "$target" symlink
+  assert_native_first "default run writes native first" "$out" "$target" copy
 }
 
 test_editor_claude() {
@@ -80,7 +80,7 @@ test_editor_claude() {
     fail "--editor claude writes native first (link failed: $out)"
     return
   fi
-  assert_native_first "--editor claude writes native first" "$out" "$target" symlink
+  assert_native_first "--editor claude writes native first" "$out" "$target" copy
   [[ "$(cat "$target/.claude/rules/unique.md")" == "vendor only" ]] && pass "--editor claude keeps a non-colliding overlay" || fail "--editor claude keeps a non-colliding overlay"
 }
 
@@ -107,7 +107,7 @@ test_editor_grok() {
     fail "--editor grok writes native first (link failed: $out)"
     return
   fi
-  assert_native_first "--editor grok writes native first" "$out" "$target" symlink
+  assert_native_first "--editor grok writes native first" "$out" "$target" copy
 }
 
 test_mode_copy() {

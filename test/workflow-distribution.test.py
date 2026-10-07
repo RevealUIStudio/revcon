@@ -34,8 +34,8 @@ class Workflows(unittest.TestCase):
         return self.run_script('link.sh', '--profile', 'one', *args, ok=ok)
 
     def test_all_adapters_symlink_status_idempotence_unlink(self):
-        self.link('--editor','all')
-        self.link('--editor','all')
+        self.link('--editor','all','--mode','symlink')
+        self.link('--editor','all','--mode','symlink')
         status = json.loads(self.run_script('status.sh', '--json').stdout)
         for editor in ('cursor', 'zed', 'vscode', 'claude', 'agents'):
             dst = self.target / f'.{editor}/workflows/WORKFLOWS.md'
@@ -67,22 +67,22 @@ class Workflows(unittest.TestCase):
         dst = self.target / '.cursor/workflows/WORKFLOWS.md'
         dst.parent.mkdir(parents=True)
         dst.symlink_to(self.repo/'profiles/one/cursor/workflows/WORKFLOWS.md')
-        self.link('--editor','cursor')
+        self.link('--editor','cursor','--mode','symlink')
         self.assertEqual(dst.resolve(),self.source)
 
     def test_layers_and_skip(self):
         base = self.repo/'base/cursor/workflows/WORKFLOWS.md'
         base.parent.mkdir(parents=True); base.write_text('base')
-        self.link('--editor','cursor')
+        self.link('--editor','cursor','--mode','symlink')
         self.assertEqual((self.target/'.cursor/workflows/WORKFLOWS.md').resolve(),self.source)
         overlay = self.repo/'profiles/one/cursor/workflows/WORKFLOWS.md'
         overlay.parent.mkdir(parents=True); overlay.write_text('adapter overlay')
-        self.link('--editor','all','--skip','zed')
+        self.link('--editor','all','--skip','zed','--mode','symlink')
         self.assertEqual((self.target/'.cursor/workflows/WORKFLOWS.md').resolve(),overlay)
         self.assertFalse((self.target/'.zed').exists())
         later = self.repo/'profiles/two/workflows/WORKFLOWS.md'
         later.parent.mkdir(parents=True); later.write_text('later shared')
-        self.link('--profile','two','--editor','cursor')
+        self.link('--profile','two','--editor','cursor','--mode','symlink')
         self.assertEqual((self.target/'.cursor/workflows/WORKFLOWS.md').resolve(),later)
 
     def test_user_files_and_external_symlinks_preserved(self):

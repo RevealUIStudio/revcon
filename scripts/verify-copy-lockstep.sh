@@ -193,7 +193,7 @@ profiles="$(jq -r '.profiles | join(", ")' "$MANIFEST" 2>/dev/null || echo "?")"
 
 if (( problems > 0 )); then
   echo "✗ copy-lockstep: $problems violation(s) ($count manifest entr(y/ies), profiles: $profiles)" >&2
-  echo "  Re-apply: bash ~/revealfleet/revcon/link.sh --target $TARGET --mode copy --profile revealfleet" >&2
+  printf '  Re-apply: bash "$REVEALFLEET_ROOT/revcon/link.sh" --target %q --mode copy --profile revealfleet\n' "$TARGET" >&2 >&2
   exit 1
 fi
 

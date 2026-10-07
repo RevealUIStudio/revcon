@@ -101,6 +101,9 @@ class ClaudeOwnership(unittest.TestCase):
         self.source = self.repo / "profiles/revealui/claude/rules/biome.md"
         self.source.parent.mkdir(parents=True)
         self.source.write_text("legacy profile body")
+        native = self.repo / "profiles/revealui/revealui/rules/biome.md"
+        native.parent.mkdir(parents=True)
+        native.write_text("native profile body")
         self.destination = self.target / ".claude/rules/biome.md"
         self.destination.parent.mkdir(parents=True)
         self.destination.write_text("canonical harness body")
@@ -119,6 +122,10 @@ class ClaudeOwnership(unittest.TestCase):
     def test_preserves_canonical_owner_and_ledger_on_profile_reapply(self):
         self.link()
         self.assertEqual(self.destination.read_text(), "canonical harness body")
+        self.assertEqual(self.content.read_text(), "canonical harness body")
+        native_ledger = self.target / ".revealui/.revcon-manifest.json"
+        if native_ledger.exists():
+            self.assertNotIn("content/rules/biome.md", json.loads(native_ledger.read_text())["files"])
         manifest = json.loads(self.ledger.read_text())
         self.assertEqual(manifest["files"]["rules/biome.md"]["source"], "harnesses:rules/biome.md")
         first = self.ledger.read_bytes()
@@ -130,6 +137,37 @@ class ClaudeOwnership(unittest.TestCase):
         self.content.write_text("stale manager content")
         gate = subprocess.run(["bash", str(ROOT / "scripts/verify-copy-lockstep.sh"), "--target", str(self.target)], capture_output=True, text=True)
         self.assertNotEqual(gate.returncode, 0)
+
+    def seed_legacy_projection(self):
+        rel = "rules/tool-routing.md"
+        native = self.repo / f"profiles/revealui/revealui/{rel}"
+        native.write_text("native routing body")
+        destination = self.target / f".claude/{rel}"
+        destination.write_text("old managed routing body")
+        manifest = json.loads(self.ledger.read_text())
+        manifest["files"][rel] = {"source": f"profiles/revealui/claude/{rel}",
+                                  "sha256": hashlib.sha256(destination.read_bytes()).hexdigest()}
+        self.ledger.write_text(json.dumps(manifest))
+        return destination
+
+    def test_migrates_hash_verified_vendor_copy_to_native_projection(self):
+        destination = self.seed_legacy_projection()
+        self.link()
+        self.assertEqual(destination.read_text(), "<!-- generated from .revealui/content/rules/tool-routing.md -->\n" + "native routing body")
+        entry = json.loads(self.ledger.read_text())["files"]["rules/tool-routing.md"]
+        self.assertEqual(entry["generatedFrom"], ".revealui/content/rules/tool-routing.md")
+        first = self.ledger.read_bytes()
+        self.link()
+        self.assertEqual(self.ledger.read_bytes(), first)
+
+    def test_modified_legacy_copy_blocks_migration_before_native_writes(self):
+        destination = self.seed_legacy_projection()
+        destination.write_text("owner pending edits")
+        before = self.ledger.read_bytes()
+        self.link(ok=False)
+        self.assertEqual(destination.read_text(), "owner pending edits")
+        self.assertEqual(self.ledger.read_bytes(), before)
+        self.assertFalse((self.target / ".revealui/content/rules/tool-routing.md").exists())
 
     def test_unlink_preserves_harness_owner_and_prunes_removed_profile_entries(self):
         extra = self.source.parent / "profile-only.md"
