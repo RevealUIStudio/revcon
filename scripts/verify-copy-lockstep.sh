@@ -133,12 +133,43 @@ while IFS=$'\t' read -r rel src want; do
     continue
   fi
   have="$(hash_file "$abs")"
+  if [[ "$src" == harnesses:* ]]; then
+    content_root="$(jq -r '.contentRoot // "content"' "$TARGET/.revealui/manager.json" 2>/dev/null || echo content)"
+    canonical="$TARGET/.revealui/$content_root/$rel"
+    if [[ "$DOT" != ".claude" || "$rel" != rules/*.md || "${rel#rules/}" == */* || "$src" != "harnesses:$rel" || ! -f "$canonical" || -L "$canonical" || "$(realpath -m -- "$canonical")" != "$canonical" || "$(hash_file "$canonical")" != "$have" ]]; then
+      echo "  $file_rel — invalid harness ownership or drift from manager content" >&2
+      problems=$((problems + 1))
+    fi
+  fi
   if [[ "$have" != "$want" ]]; then
     echo "  $file_rel — content differs from the manifest (locally edited?)." >&2
     echo "    Edit the revcon profile ($src), then re-run link.sh --mode copy." >&2
     problems=$((problems + 1))
   fi
 done < <(jq -r '.files | to_entries[] | [.key, .value.source, .value.sha256] | @tsv' "$MANIFEST")
+
+# Native Codex artifacts have one separate owner: the harness materializer.
+# Validate that ownership rather than treating its tracked files as strays.
+if [[ "$DOT" == ".agents" && -f "$TARGET/.revealui/adapters/codex-files.json" ]]; then
+  harness_manifest="$TARGET/.revealui/adapters/codex-files.json"
+  if [[ -L "$harness_manifest" ]] || ! jq -e '.version == 1 and (.files | type == "object")' "$harness_manifest" >/dev/null; then
+    echo "Invalid native Codex ownership manifest" >&2
+    exit 1
+  fi
+  while IFS=$'\t' read -r file_rel want; do
+    if [[ "$file_rel" != .agents/skills/* || "$file_rel" == */../* || "$file_rel" =~ [[:cntrl:]] || -n "${manifest_paths[$file_rel]+x}" ]]; then
+      echo "Invalid or multiply owned native skill path: $file_rel" >&2
+      problems=$((problems + 1))
+      continue
+    fi
+    manifest_paths["$file_rel"]=1
+    abs="$TARGET/$file_rel"
+    if [[ ! -f "$abs" || -L "$abs" || "$(realpath -m -- "$abs")" != "$abs" || "$(hash_file "$abs")" != "$want" ]]; then
+      echo "Missing, linked, or modified native skill: $file_rel" >&2
+      problems=$((problems + 1))
+    fi
+  done < <(jq -r '.files | to_entries[] | [.key, .value] | @tsv' "$harness_manifest")
+fi
 
 # Strays: git-tracked under materialized dirs but not in the manifest
 if git -C "$TARGET" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
@@ -162,7 +193,7 @@ profiles="$(jq -r '.profiles | join(", ")' "$MANIFEST" 2>/dev/null || echo "?")"
 
 if (( problems > 0 )); then
   echo "✗ copy-lockstep: $problems violation(s) ($count manifest entr(y/ies), profiles: $profiles)" >&2
-  echo "  Re-apply: bash ~/revealfleet/revcon/link.sh --target $TARGET --mode copy --profile revealfleet" >&2
+  printf '  Re-apply: bash "$REVEALFLEET_ROOT/revcon/link.sh" --target %q --mode copy --profile revealfleet\n' "$TARGET" >&2 >&2
   exit 1
 fi
 

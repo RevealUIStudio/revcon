@@ -23,8 +23,6 @@ Vector embeddings (RAG, AI memory) live in NeonDB on the `pgvector` extension. H
 
 Agent database tooling uses the Neon MCP launcher (`launchNeonMcp`). The legacy customer Supabase MCP adapter was removed; do not reintroduce `supabase-mcp` or `@supabase/supabase-js` as runtime dependencies.
 
-Application persistence goes through `@revealui/db`. Extend its owning database client and schema; do not introduce parallel persistence clients or stores.
-
 ## Migration Discipline
 
 See `packages/db/docs/migrations-discipline.md`. `pnpm validate:migrations` enforces journal/snapshot/idempotency invariants.

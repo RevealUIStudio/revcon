@@ -10,14 +10,12 @@ Follow these rules for ALL code changes in the RevealUI monorepo.
 
 ## Protected Paths  -  Never Edit
 
-- Windows host mounts (typically `/mnt/c/`) and the LTS backup mount (`$LTS_ROOT`, typically `/mnt/e/`)  -  read-only
+- Windows host mounts (typically `/mnt/c/`) and the LTS backup mount (configured by `LTS_ROOT`)  -  read-only
 - System/credential directories: `/etc/`, `~/.ssh/`, `~/.gnupg/`, `~/.aws/`
 
 ## Database Imports
 
 `@supabase/supabase-js` has been phased out from internal runtime — do not reintroduce it as a runtime dependency. NeonDB (via `@revealui/db` + Drizzle) is the primary store. The legacy customer Supabase MCP adapter was also removed; do not re-add `supabase-mcp` launchers.
-
-Application persistence goes through `@revealui/db`. Extend its owning database client and schema; do not introduce parallel persistence clients or stores.
 
 ## Code Quality
 
@@ -40,7 +38,7 @@ Run `npx biome check --write <file>` on each file you edit before moving on.
 1. Run `pnpm gate:quick` and confirm no new errors
 2. Review `git diff` for unintended changes
 3. Ensure conventional commit format: `type(scope): description`
-4. Git identity: Use the committer's own verified GitHub noreply identity from the supported Git configuration; do not substitute another author.
+4. Git identity: RevealUI Studio <founder@revealui.com>
 
 ## Known Limitation
 

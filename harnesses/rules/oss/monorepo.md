@@ -1,9 +1,9 @@
 # Monorepo Conventions
 
 ## Structure
-- Apps live in `apps/` — deployable services (Next.js, Hono, Vite)
-- Packages live in `packages/` — shared libraries consumed by apps
-- Scripts live in `scripts/` — CLI tools, automation, CI gates
+- Apps live in `apps/`  -  deployable services (Next.js, Hono, Vite)
+- Packages live in `packages/`  -  shared libraries consumed by apps
+- Scripts live in `scripts/`  -  CLI tools, automation, CI gates
 
 ## Package Manager
 - pnpm 10 with workspace protocol
@@ -46,7 +46,7 @@
 ## Publishing
 - OSS packages: `publishConfig.access: "public"`, MIT license
 - Pro packages: `publishConfig.access: "public"`, commercial license (source-available on npm)
-- Use changesets for versioning: `pnpm changeset` → `pnpm changeset:version` → `pnpm changeset:publish`
+- Version with changesets (`pnpm changeset`). **Publish only via GitHub Actions `release.yml` on `main` (OIDC).** Never `npm login`, never a GAT/`_authToken`, never local `npm publish` / `pnpm publish`. See rule `npm-oidc-publish`.
 
 ## Import Conventions
 - Use package names (`@revealui/core`) not relative paths between packages

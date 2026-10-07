@@ -1,0 +1,56 @@
+{
+  "name": "revealui",
+  "description": "RevealUI governed hooks and MCP access for VS Code agent mode",
+  "version": "0.1.0",
+  "hooks": {
+    "SessionStart": [
+      {
+        "command": "revealui-harnesses hook vscode",
+        "type": "command"
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "command": "revealui-harnesses hook vscode",
+        "type": "command"
+      }
+    ],
+    "PreToolUse": [
+      {
+        "command": "revealui-harnesses hook vscode",
+        "type": "command"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "command": "revealui-harnesses hook vscode",
+        "type": "command"
+      }
+    ],
+    "PreCompact": [
+      {
+        "command": "revealui-harnesses hook vscode",
+        "type": "command"
+      }
+    ],
+    "SubagentStart": [
+      {
+        "command": "revealui-harnesses hook vscode",
+        "type": "command"
+      }
+    ],
+    "SubagentStop": [
+      {
+        "command": "revealui-harnesses hook vscode",
+        "type": "command"
+      }
+    ],
+    "Stop": [
+      {
+        "command": "revealui-harnesses hook vscode",
+        "type": "command"
+      }
+    ]
+  },
+  "mcpServers": ".mcp.json"
+}

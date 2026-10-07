@@ -7,7 +7,7 @@ Run **both axes in parallel** before claiming done or approving a PR. Do not fin
 | **Standards** | Does this match fleet hardlines, package boundaries, and house style? | PASS / FAIL with file:line |
 | **Spec** | Does this deliver the agreed behavior at the right seams? | PASS / FAIL with acceptance map |
 
-Ship only when **both** are PASS. Record unresolved failures as durable work; tracking or owner disposition does not authorize a workaround or make a failed requirement pass.
+Ship only when **both** are PASS (or FAIL items are filed as durable follow-ups with owner disposition, not silent skips).
 
 ## 0. Automated Checks (both axes feed on these)
 
@@ -56,11 +56,11 @@ If copy/claims touched: `pnpm validate:claims`. If harness content touched: cont
 ### A5. Git and secrets
 - [ ] Conventional commit: `type(scope): description`
 - [ ] Subject under 72 chars, imperative
-- [ ] Identity: use the committer's own verified GitHub noreply identity from supported Git configuration; never substitute another author
+- [ ] Identity: use the configured signing identity and its verified email; do not embed a developer identity in shared instructions
 - [ ] No secrets in tree; revvault paths only in docs/chat
 
 ### A6. Process hardlines (when applicable)
-- [ ] Durable fix in owning primitive (no new one-off, registered hotfix, or workaround recipe)
+- [ ] Durable fix in owning primitive (no one-off or workaround recipe)
 - [ ] Proposal-shaped only unless owner named a disposition
 - [ ] Security surfaces: recorded review before "ready to merge" language
 
@@ -95,7 +95,7 @@ If copy/claims touched: `pnpm validate:claims`. If harness content touched: cont
 2. **Standards pass**  -  walk Axis A; write FAIL as `path:line  -  rule  -  fix`.
 3. **Spec pass**  -  walk Axis B; write FAIL as `criterion  -  evidence missing/broken  -  fix`.
 4. **Cross-check**  -  a Standards-only green with Spec FAIL is **not** shippable; same in reverse.
-5. **Verdict**  -  APPROVE only if both axes PASS. Owner disposition and tracking do not clear a failed requirement or authorize a one-off.
+5. **Verdict**  -  APPROVE only if both axes PASS (or residual is owner-dispositioned and tracked).
 
 ## Anti-patterns
 

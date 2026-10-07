@@ -72,7 +72,11 @@ run_script() {
   (
     unset REVCON_SKIP_EDITORS REVCON_PRIVATE_PROFILES_DIR
     export HOME="$FAKE_HOME"
-    bash "$FIXTURE_REVCON/$script" "$@"
+    if [[ "$script" == "link.sh" && " $* " != *" --mode "* ]]; then
+      bash "$FIXTURE_REVCON/$script" --mode symlink "$@"
+    else
+      bash "$FIXTURE_REVCON/$script" "$@"
+    fi
   )
 }
 
@@ -830,6 +834,11 @@ test_canonical_private_profile_provenance
 test_private_scanner_covers_named_parents
 test_link_idempotent_symlink_mode
 test_link_idempotent_copy_mode
+if python3 "$REPO_ROOT/test/native-distribution.test.py"; then
+  pass "portable native skill distribution fixtures"
+else
+  fail "portable native skill distribution fixtures"
+fi
 
 echo ""
 if bash "$REPO_ROOT/test/native-first.test.sh"; then

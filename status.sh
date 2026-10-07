@@ -333,7 +333,11 @@ process_target() {
               state="modified"
             else
               local src_abs
-              if [[ "$src_rel" == private:* ]]; then
+              if [[ "$src_rel" == harnesses:* ]]; then
+                local content_root
+                content_root="$(jq -r '.contentRoot // "content"' "$target/.revealui/manager.json" 2>/dev/null)"
+                src_abs="$target/.revealui/$content_root/${src_rel#harnesses:}"
+              elif [[ "$src_rel" == private:* ]]; then
                 src_abs="$PRIVATE_PROFILES_DIR/${src_rel#private:}"
               else
                 src_abs="$SCRIPT_DIR/$src_rel"

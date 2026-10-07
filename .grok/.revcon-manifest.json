@@ -3,7 +3,7 @@
   "files": {
     "rules/code-over-docs.md": {
       "generatedFrom": ".revealui/content/rules/code-over-docs.md",
-      "sha256": "b06a3e455dcdb228d88c26a7007a4490a87af413fbb7358a4f12e0486829e252",
+      "sha256": "166172dbd525830831015f4c9d76fc39e6924a7f195a2736b725e696ca606e65",
       "source": "profiles/revealfleet/revealui/rules/code-over-docs.md"
     },
     "rules/control-layer.md": {
@@ -13,12 +13,12 @@
     },
     "rules/disposition-actions.md": {
       "generatedFrom": ".revealui/content/rules/disposition-actions.md",
-      "sha256": "2e45763692debb9aa75b8f3c9f9a2b44526ed118077ff3269d7e503b69f40a7e",
+      "sha256": "843196de5162a880b10f1227e36b1ca8e753fae89570e97511037753f1abd323",
       "source": "profiles/revealfleet/revealui/rules/disposition-actions.md"
     },
     "rules/durable-solutions.md": {
       "generatedFrom": ".revealui/content/rules/durable-solutions.md",
-      "sha256": "1bac6fd1f59472f78ebce1a42b84a3c297d012cc999322d4fe74242912d298e0",
+      "sha256": "0f3f28c9067c92b94873acaf8cf297746b8e0504b3affffbf8b969b029ddd65e",
       "source": "profiles/revealfleet/revealui/rules/durable-solutions.md"
     },
     "rules/exhaustive.md": {
@@ -68,7 +68,7 @@
     },
     "rules/token-economy.md": {
       "generatedFrom": ".revealui/content/rules/token-economy.md",
-      "sha256": "ae6bdf6c247e27d35706c1bebc2c1482fd4a17e55e6fb5dd8acc69785f976df3",
+      "sha256": "c421b8e78bee5f9d3e4006a587ba93c1c1b77b62dfddef80666a1f10d84d7f49",
       "source": "profiles/revealfleet/revealui/rules/token-economy.md"
     }
   },

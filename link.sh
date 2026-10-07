@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# link.sh — Symlink editor configs into a target project.
+# link.sh — Materialize editor configs into a target project.
 #
 # Usage:
-#   ./link.sh --target ~/revealfleet/revealui --profile revealfleet
-#   ./link.sh --target ~/revealfleet/revealui --profile revealfleet --profile revealui --editor all
-#   ./link.sh --target ~/revealfleet/revforge --editor all       # all adapters, base only
-#   ./link.sh --target ~/revealfleet/revealui --editor zed         # zed only
+#   ./link.sh --target "$REVEALFLEET_ROOT/revealui" --profile revealfleet
+#   ./link.sh --target "$REVEALFLEET_ROOT/revealui" --profile revealfleet --profile revealui --editor all
+#   ./link.sh --target "$REVEALFLEET_ROOT/revforge" --editor all       # all adapters, base only
+#   ./link.sh --target "$REVEALFLEET_ROOT/revealui" --editor zed         # zed only
 #   ./link.sh --list                                            # show available profiles
 #
 # Always writes .revealui/content first when native sources exist, then
@@ -13,13 +13,13 @@
 # carries a "generated from .revealui" marker, whatever --editor is passed.
 # Other adapters still require --editor NAME or explicit --editor all.
 # Creates real directories in the target,
-# then symlinks individual config files from base/ and optionally one or more
+# then copies individual config files from base/ and optionally one or more
 # profile overlays. --profile is repeatable; profiles are applied in the order
 # given, and later profiles override earlier ones on filename collisions
 # (base → first profile → second profile → ...).
-# Adds symlinked dirs to the target's .gitignore.
+# Explicit legacy symlink mode adds managed dirs to the target's .gitignore.
 #
-# With --mode copy, files are materialized as real copies instead of symlinks,
+# Copy mode is the default: files are materialized as real copies,
 # a deterministic <dot_dir>/.revcon-manifest.json (per-file source + sha256)
 # is written, and no .gitignore entry is added: the target repo is expected to
 # TRACK the copies and gate drift with a lockstep check against the manifest.
@@ -32,7 +32,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 TARGET=""
 PROFILES=()
 EDITOR="revealui"
-MODE="symlink"
+MODE="copy"
 DRY_RUN=false
 SKIP_EDITORS="${REVCON_SKIP_EDITORS:-}"
 PRIVATE_PROFILES_DIR="${REVCON_PRIVATE_PROFILES_DIR:-}"
@@ -57,7 +57,7 @@ Options:
   --editor NAME    Editor to link: revealui, cursor, zed, vscode, claude, grok, agents, all (default: revealui)
                    revealui is always written first when native sources exist.
                    .claude and .grok are projections of that native tree.
-  --mode NAME      Distribution mode: symlink (default) or copy. Copy mode
+  --mode NAME      Distribution mode: copy (default) or legacy symlink. Copy mode
                    materializes real files so the target repo can git-track
                    them, writes <dot_dir>/.revcon-manifest.json (per-file
                    source + sha256), and does NOT gitignore the dot-dir.
@@ -72,12 +72,12 @@ Environment variables:
                               private profiles take precedence over in-repo ones.
 
 Examples:
-  ./link.sh --target ~/revealfleet/revealui --profile revealfleet
-  ./link.sh --target ~/revealfleet/revealui --profile revealfleet --profile revealui --editor all
-  ./link.sh --target ~/revealfleet/revforge --profile revealfleet
-  ./link.sh --target ~/revealfleet/foo --editor zed
-  ./link.sh --dry-run --target ~/revealfleet/foo --profile revealfleet
-  REVCON_SKIP_EDITORS=cursor ./link.sh --target ~/revealfleet/foo --profile revealfleet
+  ./link.sh --target "$REVEALFLEET_ROOT/revealui" --profile revealfleet
+  ./link.sh --target "$REVEALFLEET_ROOT/revealui" --profile revealfleet --profile revealui --editor all
+  ./link.sh --target "$REVEALFLEET_ROOT/revforge" --profile revealfleet
+  ./link.sh --target "$REVEALFLEET_ROOT/foo" --editor zed
+  ./link.sh --dry-run --target "$REVEALFLEET_ROOT/foo" --profile revealfleet
+  REVCON_SKIP_EDITORS=cursor ./link.sh --target "$REVEALFLEET_ROOT/foo" --profile revealfleet
 EOF
   exit 0
 }
@@ -192,6 +192,28 @@ COPIED=0
 # Paths left untouched because they are real user files (no generated-from
 # marker and no manifest entry). Manifest writers must not claim them.
 declare -A PRESERVED_NATIVE=()
+declare -A HARNESS_RULES=()
+declare -A EXISTING_PROJECTIONS=()
+
+# Admit harness ownership before native or vendor distribution writes anything.
+validate_harness_rules() {
+  local ownership="$TARGET/.claude/.revcon-manifest.json"
+  HARNESS_RULES=()
+  [[ -e "$ownership" || -L "$ownership" ]] || return 0
+  if [[ -L "$ownership" ]] || ! jq -e '.mode == "copy" and .editor == "claude" and (.files | type == "object") and all(.files[]; (.source | type == "string") and (.sha256 | type == "string"))' "$ownership" >/dev/null; then
+    echo "Error: invalid Claude ownership manifest" >&2; exit 1
+  fi
+  local owned_rel owned_source owned_hash owned_file
+  while IFS=$'\t' read -r owned_rel owned_source owned_hash; do
+    [[ "$owned_source" == harnesses:* ]] || continue
+    owned_file="$TARGET/.claude/$owned_rel"
+    if [[ "$MODE" != "copy" || "$owned_rel" != rules/*.md || "${owned_rel#rules/}" == */* || "$owned_rel" =~ [[:cntrl:]] || "$owned_source" != "harnesses:$owned_rel" || ! -f "$owned_file" || -L "$owned_file" || "$(realpath -m -- "$owned_file")" != "$owned_file" || "$(sha256sum < "$owned_file" | cut -d' ' -f1)" != "$owned_hash" ]]; then
+      echo "Error: invalid or modified harness-owned Claude rule" >&2; exit 1
+    fi
+    HARNESS_RULES["$owned_rel"]=1
+  done < <(jq -r '.files | to_entries[] | [.key, .value.source, .value.sha256] | @tsv' "$ownership")
+}
+
 declare -A PRESERVED_VENDOR=()
 PROJECTION_PRESERVED=0
 
@@ -232,6 +254,11 @@ projection_manifest_owns() {
 
 projection_real_file_owned() {
   local dst="$1" native_rel="$2" manifest="$3" vendor_rel="$4"
+  # Existing hash-verified managed copies can migrate to native projections.
+  if [[ -n "${EXISTING_PROJECTIONS[$dst]+x}" ]]; then
+    [[ "$(sha256sum < "$dst" | cut -d' ' -f1)" == "${EXISTING_PROJECTIONS[$dst]}" ]]
+    return
+  fi
   case "$native_rel" in
     *.md|*.mdx) projection_has_generated_marker "$dst" "$native_rel" ;;
     *) projection_manifest_owns "$manifest" "$vendor_rel" ;;
@@ -304,8 +331,12 @@ write_manifest() {
 
   local profiles_json files_json='{}' rel src hash
   profiles_json="$(jq -cn --args '$ARGS.positional' "${PROFILES[@]}")"
+  if [[ "$editor" == "claude" && -f "$manifest" ]]; then
+    files_json="$(jq -c '.files | with_entries(select(.value.source | startswith("harnesses:")))' "$manifest")"
+  fi
   while IFS= read -r -d '' rel; do
     [[ -n "${PRESERVED_NATIVE[$rel]+x}" ]] && continue
+    [[ -n "$rel" ]] || continue
     src="${fmap[$rel]}"
     hash="$(sha256sum < "$src" | cut -d' ' -f1)"
     files_json="$(jq -cn --argjson files "$files_json" --arg rel "$rel" \
@@ -358,6 +389,10 @@ link_editor() {
   local target_dir="$TARGET/$dot_dir"
   local prefix=""
   [[ "$editor" == "revealui" ]] && prefix="content/"
+  if [[ "$MODE" == "copy" && -L "$target_dir/.revcon-manifest.json" ]]; then
+    echo "Error: copy ownership manifest must be a regular file" >&2
+    exit 1
+  fi
 
   # Check if there are any files to link for this editor
   local has_base=false
@@ -371,7 +406,7 @@ link_editor() {
   done
 
   if ! $has_base && ! $has_any_profile; then
-    if [[ "$editor" == "revealui" && "$EDITOR" != "all" ]]; then
+    if [[ "$editor" == "revealui" && "$EDITOR" != "all" && ${#HARNESS_RULES[@]} -eq 0 ]]; then
       echo "Error: no native RevealUI content for selected profiles; provide maintained base/revealui or profiles/<profile>/revealui content." >&2
       exit 1
     fi
@@ -427,6 +462,13 @@ link_editor() {
     done < <(find "$profile_src" -type f -print0 | sort -z)
   done
 
+  # Definition rules and their content twins remain owned by the harness.
+  local owned_rel
+  for owned_rel in "${!HARNESS_RULES[@]}"; do
+    if [[ "$editor" == "revealui" ]]; then unset 'file_map[content/$owned_rel]'; fi
+    if [[ "$editor" == "claude" ]]; then unset 'file_map[$owned_rel]'; fi
+  done
+
   # Vendor profile files cannot replace native policy. Collisions are
   # dropped here and written later as projections of the native tree.
   if [[ "$editor" == "claude" ]]; then
@@ -441,7 +483,7 @@ link_editor() {
   fi
 
   if [[ ${#file_map[@]} -eq 0 ]]; then
-    if [[ "$editor" == "revealui" && "$EDITOR" != "all" ]]; then
+    if [[ "$editor" == "revealui" && "$EDITOR" != "all" && ${#HARNESS_RULES[@]} -eq 0 ]]; then
       echo "Error: no native RevealUI content files for selected profiles; empty native directories cannot materialize policy." >&2
       exit 1
     fi
@@ -464,6 +506,66 @@ link_editor() {
       fi
     fi
   done
+
+  # The harness package owns its native Codex delivery. RevCon continues to
+  # deliver profile-only skills, without becoming a second owner of the pack.
+  if [[ "$editor" == "agents" && -f "$TARGET/.revealui/adapters/codex-files.json" ]]; then
+    local harness_manifest="$TARGET/.revealui/adapters/codex-files.json"
+    if [[ -L "$harness_manifest" ]] || ! jq -e '.version == 1 and (.files | type == "object")' "$harness_manifest" >/dev/null; then
+      echo "Error: invalid Codex delivery ownership manifest" >&2
+      exit 1
+    fi
+    for rel in "${!file_map[@]}"; do
+      local harness_hash
+      harness_hash="$(jq -r --arg path ".agents/$rel" '.files[$path] // empty' "$harness_manifest")"
+      [[ -n "$harness_hash" ]] || continue
+      local harness_file="$target_dir/$rel"
+      if [[ ! -f "$harness_file" || -L "$harness_file" || "$(realpath -m -- "$harness_file")" != "$harness_file" || "$(sha256sum < "$harness_file" | cut -d' ' -f1)" != "$harness_hash" ]]; then
+        echo "Error: preserving modified harness-owned skill: $harness_file" >&2
+        exit 1
+      fi
+      unset 'file_map[$rel]'
+    done
+    if [[ "$MODE" != "copy" ]]; then
+      echo "Error: native Codex projects require portable copy delivery" >&2
+      exit 1
+    fi
+  fi
+
+  # Profile skills use the same ownership-preserving migration contract as
+  # shared workflow documents. Preflight all files before replacing any.
+  if [[ "$MODE" == "copy" || "$editor" == "agents" ]]; then
+    for rel in "${!file_map[@]}"; do
+      [[ "$rel" == "${SHARED_WORKFLOW_DIRS[$editor]}/"* ]] && continue
+      local dst="$target_dir/$rel" resolved
+      resolved="$(realpath -m -- "$(dirname "$dst")")/$(basename "$dst")"
+      if [[ "$rel" =~ [[:cntrl:]] || -L "$target_dir" || "$resolved" != "$dst" || "$rel" == ../* || "$rel" == */../* ]]; then
+        echo "Error: unsafe native skill destination: $dst" >&2
+        exit 1
+      fi
+      if [[ -L "$dst" ]]; then
+        local source_rel existing
+        source_rel="${file_map[$rel]#"$SCRIPT_DIR/"}"
+        existing="$(readlink "$dst")"
+        if [[ "$existing" != "${file_map[$rel]}" && "$existing" != */revcon/"$source_rel" ]]; then
+          echo "Error: preserving foreign native skill symlink: $dst" >&2
+          exit 1
+        fi
+      elif [[ -e "$dst" ]]; then
+        if [[ "$editor" == "revealui" ]] && ! native_manifest_owns "$target_dir/.revcon-manifest.json" "$rel"; then
+          continue
+        fi
+        local copy_manifest="$target_dir/.revcon-manifest.json" previous_hash=""
+        if [[ -f "$copy_manifest" && ! -L "$copy_manifest" ]]; then
+          previous_hash="$(jq -r --arg rel "$rel" '.files[$rel].sha256 // empty' "$copy_manifest")"
+        fi
+        if [[ ! -f "$dst" || -z "$previous_hash" || "$(sha256sum < "$dst" | cut -d' ' -f1)" != "$previous_hash" ]]; then
+          echo "Error: preserving unowned or modified native skill: $dst" >&2
+          exit 1
+        fi
+      fi
+    done
+  fi
 
   # Shared/manual documents preserve user ownership during migration. A copy
   # is managed only while its manifest hash still matches; external symlinks
@@ -614,6 +716,8 @@ collect_native_file_map() {
       _dest["$rel"]="$file"
     done < <(find "$profile_src" -type f -print0 | sort -z)
   done
+  local owned_rel
+  for owned_rel in "${!HARNESS_RULES[@]}"; do unset '_dest[content/$owned_rel]'; done
 }
 
 install_projection_file() {
@@ -800,7 +904,33 @@ project_native_vendors() {
   done
 }
 
+# Retain ownership evidence before vendor overlay manifests are rewritten.
+# This is runtime state from the existing ledger, never a second owner store.
+snapshot_projection_ownership() {
+  local -A native_map=()
+  local vendor manifest rel source hash dst
+  EXISTING_PROJECTIONS=()
+  collect_native_file_map native_map
+  for vendor in claude grok; do
+    manifest="$TARGET/.$vendor/.revcon-manifest.json"
+    [[ -f "$manifest" && ! -L "$manifest" ]] || continue
+    while IFS=$'\t' read -r rel source hash; do
+      [[ -n "${native_map[content/$rel]+x}" ]] || continue
+      [[ "$source" != harnesses:* ]] || continue
+      dst="$TARGET/.$vendor/$rel"
+      [[ -f "$dst" && ! -L "$dst" ]] || continue
+      if [[ "$(realpath -m -- "$dst")" != "$dst" || "$(sha256sum < "$dst" | cut -d' ' -f1)" != "$hash" ]]; then
+        echo "Error: modified managed vendor file; cannot migrate native projection" >&2
+        exit 1
+      fi
+      EXISTING_PROJECTIONS["$dst"]="$hash"
+    done < <(jq -r '.files | to_entries[] | [.key, .value.source, .value.sha256] | @tsv' "$manifest")
+  done
+}
+
 distribute_editors() {
+  validate_harness_rules
+  snapshot_projection_ownership
   case "$EDITOR" in
     revealui|claude|grok)
       link_editor revealui

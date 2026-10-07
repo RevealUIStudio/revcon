@@ -26,29 +26,24 @@ Audit the codebase for security issues across these categories:
 - Privilege escalation paths (user → admin)
 - Tenant isolation (multi-site data leakage)
 
-### 5. Entitlements and Error Responses
-- Verify access against the current owning entitlement middleware and the specific capability: paid Pro features and Free local AI have different grants
-- Require fail-closed access when the owning grant denies or cannot establish authority; do not substitute a different feature flag
-- Check that error responses do not leak stack traces, credentials, or internal details
-
-### 6. CSP & Headers
+### 5. CSP & Headers
 - Content-Security-Policy completeness
 - CORS misconfiguration (check allowed origins)
 - Missing security headers (HSTS, X-Frame-Options, etc.)
 
-### 7. Dependency Security
+### 6. Dependency Security
 - Known vulnerabilities in direct dependencies
-- Database boundary violations: application persistence must use the owning `@revealui/db` client and schema
+- Supabase boundary violations (imports outside permitted paths)
 
 ## Architecture Context
 
 - **Auth**: Session-only (no JWT). `revealui-session` cookie across `.revealui.com`.
-- **Database**: One Neon-primary PostgreSQL store through `@revealui/db` and Drizzle, including pgvector data. Supabase runtime and its MCP adapter are retired.
+- **Dual-DB**: NeonDB (REST content) + Supabase (vectors/auth). Strict import boundary.
 - **Tiers**: free, pro, max, enterprise. License checks via `isLicensed()`.
 - **API**: Hono on port 3004. admin calls API cross-origin (CORS configured).
 
 ## Rules
-- Use AST-based analysis over regex for code-shape checks (see .revealui/content/rules/code-analysis-policy.md)
+- Use AST-based analysis over regex for code-shape checks (see .claude/rules/code-analysis-policy.md)
 - Report findings with severity (critical/high/medium/low), file path, and line number
 - Suggest specific fixes, not just descriptions
 - Do NOT modify source code  -  report only

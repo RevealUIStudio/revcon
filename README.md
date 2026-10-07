@@ -1,26 +1,29 @@
 # revcon
 
-Centralized editor configurations for RevealUI projects. Configs are symlinked
-into target projects — edits propagate instantly, nothing gets committed to
-target repos.
+Centralized editor configurations for RevealUI projects. The maintained
+distributor materializes portable copies by default and records their ownership.
+Reapply after canonical edits, and commit generated artifacts with the target
+project. Legacy symlink mode remains explicit.
 
 ## Quick Start
 
+Fleet examples use `REVEALFLEET_ROOT`, supplied by the maintained fleet bootstrap.
+
 ```bash
 # Link first-party fleet policy only (default editor: revealui)
-./link.sh --target ~/revealfleet/revealui --profile revealfleet
+./link.sh --target "$REVEALFLEET_ROOT/revealui" --profile revealfleet
 
 # Explicitly opt into all adapters, base configs only (no profile)
-./link.sh --target ~/revealfleet/revforge --editor all
+./link.sh --target "$REVEALFLEET_ROOT/revforge" --editor all
 
 # Link a single editor
-./link.sh --target ~/revealfleet/revealui --profile revealui --editor zed
+./link.sh --target "$REVEALFLEET_ROOT/revealui" --profile revealui --editor zed
 
 # Preview without changes
-./link.sh --dry-run --target ~/revealfleet/revealui --profile revealfleet
+./link.sh --dry-run --target "$REVEALFLEET_ROOT/revealui" --profile revealfleet
 
-# Remove symlinks
-./unlink.sh --target ~/revealfleet/revealui
+# Remove managed delivery
+./unlink.sh --target "$REVEALFLEET_ROOT/revealui"
 
 # List available profiles
 ./link.sh --list
@@ -62,8 +65,8 @@ revcon/
 │   └── generators/                # Pre-rendered, ready to copy
 │       ├── claude-code/           #   → .claude/
 │       └── cursor/                #   → .cursor/rules/
-├── link.sh                        # Create symlinks + gitignore
-└── unlink.sh                      # Remove symlinks
+├── link.sh                        # Materialize owned copies; explicit legacy symlinks
+└── unlink.sh                      # Remove managed delivery
 ```
 
 ## Skill multi-copy (GAP-358)
@@ -89,17 +92,17 @@ profile `SKILL.md` files.
 ## How It Works
 
 1. **`link.sh`** creates real directories (`.zed/`, `.cursor/`) in the target project
-2. Individual config files are symlinked from `base/` into those directories
+2. Individual config files are copied from `base/` into those directories
 3. `--profile` is repeatable. Profiles overlay on top of `base/` in the order
    given, and later profiles override earlier ones on filename collisions
    (`base` → first `--profile` → second `--profile` → ...):
    ```bash
-   ./link.sh --target ~/revealfleet/revealui --profile revealfleet --profile revealui
+   ./link.sh --target "$REVEALFLEET_ROOT/revealui" --profile revealfleet --profile revealui
    ```
    The canonical fleet profile is `revealfleet`. `./link.sh --list` names a
    deprecated alias when one still resolves to that profile.
 4. Editor-written state (cache, chat history) stays in the real directory, not here
-5. `.gitignore` is updated so symlinked dirs are never committed
+5. Copy manifests record ownership and hashes. Existing unowned or modified copies are preserved and block application. Explicit legacy symlink mode updates `.gitignore`.
 
 ## Copy Mode (materialized, git-tracked)
 
@@ -108,10 +111,10 @@ target repo see none of the distributed config. For repos that need the config
 to travel with the repo, use copy mode:
 
 ```bash
-./link.sh --target ~/revealfleet/revealui --profile revealfleet --profile revealui --mode copy
+./link.sh --target "$REVEALFLEET_ROOT/revealui" --profile revealfleet --profile revealui --mode copy
 ```
 
-Copy mode materializes real files instead of symlinks, writes a deterministic
+Copy mode is the default. It materializes real files instead of symlinks and writes a deterministic
 `<dot_dir>/.revcon-manifest.json` (per-file profile source + sha256), and does
 NOT add a `.gitignore` entry: the target repo tracks the copies and gates
 drift with a lockstep check against the manifest (revealui:
@@ -141,7 +144,7 @@ default to inspecting all managed trees, including existing vendor projections.
 
 ```bash
 # Per-invocation
-./link.sh --target ~/revealfleet/foo --profile revealui --editor all --skip cursor
+./link.sh --target "$REVEALFLEET_ROOT/foo" --profile revealui --editor all --skip cursor
 
 # Default for your machine — set in ~/.bashrc / ~/.zshrc
 export REVCON_SKIP_EDITORS=cursor
@@ -164,7 +167,7 @@ mkdir -p ~/private/revcon-profiles/joshua/{zed,claude}
 # Drop your proprietary configs (rules, MCP servers, custom commands) under that tree.
 # Same layout as profiles/<name>/<editor>/.
 
-./link.sh --target ~/revealfleet/foo --profile joshua --editor all
+./link.sh --target "$REVEALFLEET_ROOT/foo" --profile joshua --editor all
 # Resolves to ~/private/revcon-profiles/joshua/, NOT this repo.
 ```
 
@@ -237,9 +240,16 @@ revealui-harnesses content pull --generator claude-code --tier all
 To regenerate after updating definitions:
 
 ```bash
-cd ~/revealfleet/revealui
-node packages/harnesses/dist/cli.js content export --output ~/revealfleet/revcon/harnesses
+cd "$REVEALFLEET_ROOT/revealui"
+node packages/harnesses/dist/cli.js content export \
+  --output "$REVEALFLEET_ROOT/revcon/harnesses" \
+  --rule-profile "$REVEALFLEET_ROOT/revcon/profiles/revealfleet/revealui/rules" \
+  --rule-id durable-solutions
 ```
+
+The optional `--rule-profile` and `--rule-id` arguments are repeatable. Select
+package-defined rules explicitly so adapted profile rules keep their owning
+source. Canonical export removes obsolete copies when a definition changes tier.
 
 ### OSS vs Pro
 
@@ -293,19 +303,29 @@ copy lockstep and confined unlink operate on these entries normally. Unlink
 keeps modified copies. Use the normal unlink lifecycle before switching a workflow copy installation
 to symlink mode; this prevents a stale copy manifest from masking link status.
 
-### First-party fleet policy
+## Claude rule ownership
 
-Fleet policy is owned in `profiles/revealfleet/revealui/rules/`. Materialize
-first-party policy without vendor output:
+Harness materialization owns definition-backed Claude rule mirrors. It records
+`harnesses:rules/<id>.md` and the generated hash in the existing
+`.claude/.revcon-manifest.json`. RevCon preserves these files and entries during
+profile reapplication and rejects modified harness copies before writing.
+Unlink preserves harness-owned rules and their ledger entries.
+Profile-only rules continue to come from their recorded RevCon profiles.
 
-```bash
-./link.sh --target /path/to/project --profile revealfleet --editor revealui --mode copy
-./status.sh --target /path/to/project --editor revealui --verify
-```
+Both copy-lockstep gates check the ledger hash and the harness content twin
+under the manager's configured `contentRoot`. `status.sh --verify` also checks
+profile source freshness. Regenerate harness rules through manager
+materialization; update profile rules in their owning profile and reapply it.
 
-This writes `.revealui/content/rules/` and `.revealui/.revcon-manifest.json`
-with `content/rules/...` keys and native profile source hashes. The same run
-generates `.claude` and `.grok` from that native tree, with a
-`generated from .revealui` marker on each projection. Native policy wins
-collisions. Do not hand-copy or edit installed policy. Edit its owning profile
-and use the maintained materializer.
+## Native Codex ownership
+
+RevealUI harness definitions own generated native skills through the project
+`.revealui/adapters/codex-files.json` ledger. The agents distributor verifies
+those files and excludes them from profile delivery. Profile-only skills retain
+one owner in `.agents/.revcon-manifest.json`. The copy-lockstep gate validates
+both ledgers and rejects overlapping ownership. Native Codex projects require
+copy delivery. Recognized legacy profile links can migrate after relocation;
+foreign links, linked parents, and unowned or modified files block application.
+
+Canonical edits must be materialized through the owning maintained tool.
+Generated copies and manifests travel with the project checkout.
