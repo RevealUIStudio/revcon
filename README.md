@@ -329,3 +329,16 @@ foreign links, linked parents, and unowned or modified files block application.
 
 Canonical edits must be materialized through the owning maintained tool.
 Generated copies and manifests travel with the project checkout.
+
+### Recover formatter drift in generated references
+
+Normal copy delivery rejects modified managed projections. For TypeScript and
+JavaScript skill references, `link.sh --recover-formatting` can prove that a copy
+is exactly the output of the target project's existing Biome 2.5.2 or 2.5.4 formatter and
+configuration before regenerating it through the native owner.
+
+Recovery requires an unchanged canonical source, a matching generated-from path,
+and matching ownership evidence committed in the target's HEAD. A missing or
+wrong formatter, changed source, genuine edit, or unverified ledger fails before
+native/projection writes. `--dry-run` proves eligibility without changing target
+files. This option does not adopt edits or relax the normal copy lockstep gates.

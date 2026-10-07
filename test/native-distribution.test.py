@@ -216,6 +216,86 @@ class ClaudeOwnership(unittest.TestCase):
         self.assertFalse((self.destination.parent / extra.name).exists())
 
 
+class ProjectionRecovery(unittest.TestCase):
+    def link(self, *args, ok=True):
+        return ClaudeOwnership.link(self, *args, ok=ok)
+
+    def setUp(self):
+        ClaudeOwnership.setUp(self)
+        self.rel = "skills/reference/references/example.ts"
+        self.original = 'const color = "blue"\n'
+        self.formatted = "const color = 'blue';\n"
+        self.native = self.repo / "profiles/revealui/revealui" / self.rel
+        self.native.parent.mkdir(parents=True)
+        self.native.write_text(self.original)
+        self.copy = self.target / ".grok" / self.rel
+        self.copy.parent.mkdir(parents=True)
+        self.copy.write_text(self.formatted)
+        self.projection_ledger = self.target / ".grok/.revcon-manifest.json"
+        self.entry = {"source": "profiles/revealui/revealui/" + self.rel,
+                      "sha256": hashlib.sha256(self.original.encode()).hexdigest(),
+                      "generatedFrom": ".revealui/content/" + self.rel}
+        self.projection_ledger.write_text(json.dumps({"mode": "copy", "editor": "grok", "files": {self.rel: self.entry}}))
+        subprocess.run(["git", "init", "-q", str(self.target)], check=True)
+        subprocess.run(["git", "-C", str(self.target), "add", ".grok/.revcon-manifest.json"], check=True)
+        subprocess.run(["git", "-C", str(self.target), "-c", "user.name=Fixture", "-c", "user.email=fixture@example.test", "commit", "-qm", "Record original ownership"], check=True)
+        self.formatter = self.target / "node_modules/.bin/biome"
+        self.formatter.parent.mkdir(parents=True)
+        self.formatter.write_text("#!/usr/bin/env python3\nimport sys\nif sys.argv[1:] == ['--version']:\n print('Version: 2.5.2')\nelse:\n assert sys.argv[1:] == ['format', '--stdin-file-path=example.ts']\n assert sys.stdin.read() == " + repr(self.original) + "\n sys.stdout.write(" + repr(self.formatted) + ")\n")
+        self.formatter.chmod(0o755)
+
+    def test_recovers_only_reproducible_formatter_output_and_is_idempotent(self):
+        before = self.projection_ledger.read_bytes()
+        self.link(ok=False)
+        self.assertEqual(self.projection_ledger.read_bytes(), before)
+        result = self.link("--recover-formatting")
+        self.assertIn("[recover-formatting]", result.stdout)
+        self.assertEqual(self.copy.read_text(), self.original)
+        first = self.projection_ledger.read_bytes()
+        self.link("--recover-formatting")
+        self.assertEqual(self.projection_ledger.read_bytes(), first)
+
+    def test_current_approved_formatter_release_uses_the_same_proof_contract(self):
+        self.formatter.write_text(self.formatter.read_text().replace('Version: 2.5.2', 'Version: 2.5.4'))
+        self.link("--recover-formatting")
+        self.assertEqual(self.copy.read_text(), self.original)
+
+    def test_dry_run_proves_recovery_without_changing_any_target_bytes(self):
+        before = self.projection_ledger.read_bytes()
+        self.link("--recover-formatting", "--dry-run")
+        self.assertEqual(self.copy.read_text(), self.formatted)
+        self.assertEqual(self.projection_ledger.read_bytes(), before)
+        self.assertFalse((self.target / ".revealui/content" / self.rel).exists())
+
+    def test_genuine_edits_fail_before_native_or_ledger_writes(self):
+        self.copy.write_text("const color = 'red';\n")
+        before = self.projection_ledger.read_bytes()
+        self.link("--recover-formatting", ok=False)
+        self.assertEqual(self.copy.read_text(), "const color = 'red';\n")
+        self.assertEqual(self.projection_ledger.read_bytes(), before)
+        self.assertFalse((self.target / ".revealui/content" / self.rel).exists())
+
+    def test_changed_source_and_untrusted_ledger_cannot_authorize_recovery(self):
+        self.native.write_text("const color = 'red';\n")
+        self.link("--recover-formatting", ok=False)
+        self.native.write_text(self.original)
+        ledger = json.loads(self.projection_ledger.read_text())
+        ledger["files"][self.rel]["generatedFrom"] = ".revealui/content/skills/foreign.ts"
+        self.projection_ledger.write_text(json.dumps(ledger))
+        self.link("--recover-formatting", ok=False)
+        self.assertEqual(self.copy.read_text(), self.formatted)
+        self.assertFalse((self.target / ".revealui/content" / self.rel).exists())
+
+    def test_missing_or_wrong_formatter_version_fails_without_writes(self):
+        self.formatter.unlink()
+        self.link("--recover-formatting", ok=False)
+        self.formatter.write_text("#!/bin/sh\nprintf 'Version: 9.0.0\\n'\n")
+        self.formatter.chmod(0o755)
+        self.link("--recover-formatting", ok=False)
+        self.assertEqual(self.copy.read_text(), self.formatted)
+
+
+
 
 if __name__ == "__main__":
     unittest.main()

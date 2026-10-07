@@ -34,6 +34,7 @@ PROFILES=()
 EDITOR="revealui"
 MODE="copy"
 DRY_RUN=false
+RECOVER_FORMATTING=false
 SKIP_EDITORS="${REVCON_SKIP_EDITORS:-}"
 PRIVATE_PROFILES_DIR="${REVCON_PRIVATE_PROFILES_DIR:-}"
 
@@ -62,6 +63,8 @@ Options:
                    them, writes <dot_dir>/.revcon-manifest.json (per-file
                    source + sha256), and does NOT gitignore the dot-dir.
   --skip NAME      Skip a specific editor (repeatable, comma-separated also works)
+  --recover-formatting  Recover reference copies only after an exact approved Biome proof
+                        against committed ownership and unchanged canonical source
   --dry-run        Show what would be done without making changes
   --list           List available profiles and exit
   -h, --help       Show this help
@@ -118,6 +121,7 @@ while [[ $# -gt 0 ]]; do
     --editor)  EDITOR="$2";  shift 2 ;;
     --mode)    MODE="$2";    shift 2 ;;
     --skip)    SKIP_EDITORS="${SKIP_EDITORS:+$SKIP_EDITORS,}$2"; shift 2 ;;
+    --recover-formatting) RECOVER_FORMATTING=true; shift ;;
     --dry-run) DRY_RUN=true; shift ;;
     --list)    list_profiles ;;
     -h|--help) usage ;;
@@ -914,6 +918,33 @@ project_native_vendors() {
   done
 }
 
+# Recovery is a proof against the existing ledger and canonical bytes, not
+# adoption of local edits. Use the target's maintained formatter/configuration.
+projection_formatting_recoverable() {
+  local vendor="$1" rel="$2" source="$3" hash="$4" dst="$5" canonical="$6"
+  local formatter="$TARGET/node_modules/.bin/biome" committed formatted result=1 from
+  [[ "$RECOVER_FORMATTING" == true && "$MODE" == copy ]] || return 1
+  case "$rel" in skills/*/references/*.ts|skills/*/references/*.tsx|skills/*/references/*.js|skills/*/references/*.jsx) ;; *) return 1 ;; esac
+  [[ "$source" == "$(manifest_source "$canonical")" && "$(sha256sum < "$canonical" | cut -d' ' -f1)" == "$hash" ]] || return 1
+  from=".revealui/content/$rel"
+  jq -e --arg rel "$rel" --arg from "$from" '.files[$rel].generatedFrom == $from' \
+    "$TARGET/.$vendor/.revcon-manifest.json" >/dev/null || return 1
+  committed="$(git -C "$TARGET" show "HEAD:.$vendor/.revcon-manifest.json" 2>/dev/null)" || return 1
+  jq -e --arg rel "$rel" --arg source "$source" --arg hash "$hash" --arg from "$from" \
+    '.mode == "copy" and .files[$rel].source == $source and .files[$rel].sha256 == $hash and .files[$rel].generatedFrom == $from' \
+    <<<"$committed" >/dev/null || return 1
+  [[ -x "$formatter" ]] || return 1
+  # Approved formatter releases are bounded by recovery regressions. Unknown
+  # versions cannot silently expand the transformation accepted by this gate.
+  case "$("$formatter" --version)" in "Version: 2.5.2"|"Version: 2.5.4") ;; *) return 1 ;; esac
+  formatted="$(mktemp)"
+  if (cd "$TARGET" && "$formatter" format --stdin-file-path="$(basename "$dst")" < "$canonical") > "$formatted" 2>/dev/null; then
+    if cmp -s "$formatted" "$dst"; then result=0; fi
+  fi
+  rm -f -- "$formatted"
+  return "$result"
+}
+
 # Retain ownership evidence before vendor overlay manifests are rewritten.
 # This is runtime state from the existing ledger, never a second owner store.
 snapshot_projection_ownership() {
@@ -929,9 +960,19 @@ snapshot_projection_ownership() {
       [[ "$source" != harnesses:* ]] || continue
       dst="$TARGET/.$vendor/$rel"
       [[ -f "$dst" && ! -L "$dst" ]] || continue
-      if [[ "$(realpath -m -- "$dst")" != "$dst" || "$(sha256sum < "$dst" | cut -d' ' -f1)" != "$hash" ]]; then
-        echo "Error: modified managed vendor file; cannot migrate native projection" >&2
-        exit 1
+      if [[ "$(realpath -m -- "$dst")" != "$dst" ]]; then
+        echo "Error: unsafe managed vendor destination" >&2; exit 1
+      fi
+      local actual
+      actual="$(sha256sum < "$dst" | cut -d' ' -f1)"
+      if [[ "$actual" != "$hash" ]]; then
+        if projection_formatting_recoverable "$vendor" "$rel" "$source" "$hash" "$dst" "${native_map[content/$rel]}"; then
+          hash="$actual"
+          echo "  [recover-formatting] .$vendor/$rel (canonical formatter proof)"
+        else
+          echo "Error: modified managed vendor file; cannot migrate native projection" >&2
+          exit 1
+        fi
       fi
       EXISTING_PROJECTIONS["$dst"]="$hash"
     done < <(jq -r '.files | to_entries[] | [.key, .value.source, .value.sha256] | @tsv' "$manifest")
