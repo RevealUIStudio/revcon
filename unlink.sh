@@ -141,8 +141,14 @@ unlink_editor() {
   if [[ -f "$manifest" ]]; then
     if command -v jq >/dev/null 2>&1; then
       local kept=0
-      while IFS=$'\t' read -r rel want_hash; do
+      local -a removed_entries=()
+      while IFS=$'\t' read -r rel want_hash source; do
         [[ -n "$rel" ]] || continue
+        if [[ "$editor" == "claude" && "$source" == harnesses:* ]]; then
+          echo "  [keep] $rel - harness owned"
+          ((kept++)) || true
+          continue
+        fi
         local fpath="$target_dir/$rel"
         [[ -f "$fpath" ]] || continue
         local have_hash
@@ -152,6 +158,7 @@ unlink_editor() {
             echo "  [remove] $fpath (materialized copy)"
           else
             rm "$fpath"
+            removed_entries+=("$rel")
             echo "  [remove] $rel"
           fi
           ((REMOVED++)) || true
@@ -159,7 +166,7 @@ unlink_editor() {
           echo "  [keep] $rel - locally modified, not removing"
           ((kept++)) || true
         fi
-      done < <(jq -r '.files | to_entries[] | [.key, .value.sha256] | @tsv' "$manifest" 2>/dev/null)
+      done < <(jq -r '.files | to_entries[] | [.key, .value.sha256, .value.source] | @tsv' "$manifest" 2>/dev/null)
       if [[ $kept -eq 0 ]]; then
         if $DRY_RUN; then
           echo "  [remove] $manifest"
@@ -169,7 +176,14 @@ unlink_editor() {
         fi
         ((REMOVED++)) || true
       else
-        echo "  [keep] .revcon-manifest.json - $kept modified file(s) remain"
+        if ! $DRY_RUN && [[ ${#removed_entries[@]} -gt 0 ]]; then
+          local ledger_tmp removed_json
+          ledger_tmp="$(mktemp "$target_dir/.revcon-manifest.XXXXXX")"
+          removed_json="$(printf '%s\n' "${removed_entries[@]}" | jq -R . | jq -s .)"
+          jq --argjson removed "$removed_json" '.files |= delpaths($removed | map([.]))' "$manifest" > "$ledger_tmp"
+          mv "$ledger_tmp" "$manifest"
+        fi
+        echo "  [keep] .revcon-manifest.json - $kept owned or modified file(s) remain"
       fi
     else
       echo "  [skip] $manifest present but jq not found - cannot verify copies, leaving in place"

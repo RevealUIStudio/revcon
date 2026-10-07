@@ -294,22 +294,19 @@ copy lockstep and confined unlink operate on these entries normally. Unlink
 keeps modified copies. Use the normal unlink lifecycle before switching a workflow copy installation
 to symlink mode; this prevents a stale copy manifest from masking link status.
 
-### First-party fleet policy
+## Claude rule ownership
 
-Fleet policy is owned in `profiles/revealfleet/revealui/rules/`. Materialize
-first-party policy without vendor output:
+Harness materialization owns definition-backed Claude rule mirrors. It records
+`harnesses:rules/<id>.md` and the generated hash in the existing
+`.claude/.revcon-manifest.json`. RevCon preserves these files and entries during
+profile reapplication and rejects modified harness copies before writing.
+Unlink preserves harness-owned rules and their ledger entries.
+Profile-only rules continue to come from their recorded RevCon profiles.
 
-```bash
-./link.sh --target /path/to/project --profile revealfleet --editor revealui --mode copy
-./status.sh --target /path/to/project --editor revealui --verify
-```
-
-This writes `.revealui/content/rules/` and `.revealui/.revcon-manifest.json`
-with `content/rules/...` keys and native profile source hashes. The same run
-generates `.claude` and `.grok` from that native tree, with a
-`generated from .revealui` marker on each projection. Native policy wins
-collisions. Do not hand-copy or edit installed policy. Edit its owning profile
-and use the maintained materializer.
+Both copy-lockstep gates check the ledger hash and the harness content twin
+under the manager's configured `contentRoot`. `status.sh --verify` also checks
+profile source freshness. Regenerate harness rules through manager
+materialization; update profile rules in their owning profile and reapply it.
 
 ## Native Codex ownership
 

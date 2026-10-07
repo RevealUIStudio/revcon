@@ -304,6 +304,10 @@ write_manifest() {
 
   local profiles_json files_json='{}' rel src hash
   profiles_json="$(jq -cn --args '$ARGS.positional' "${PROFILES[@]}")"
+  if [[ "$editor" == "claude" && -f "$manifest" ]]; then
+    files_json="$(jq -c '.files | with_entries(select(.value.source | startswith("harnesses:")))' "$manifest")"
+  fi
+  profiles_json="$(jq -cn --args '$ARGS.positional' "${PROFILES[@]}")"
   while IFS= read -r -d '' rel; do
     [[ -n "${PRESERVED_NATIVE[$rel]+x}" ]] && continue
     [[ -n "$rel" ]] || continue
@@ -469,6 +473,24 @@ link_editor() {
       fi
     fi
   done
+
+  if [[ "$editor" == "claude" && -f "$target_dir/.revcon-manifest.json" ]]; then
+    local ownership="$target_dir/.revcon-manifest.json"
+    if [[ -L "$ownership" ]] || ! jq -e '.mode == "copy" and .editor == "claude" and (.files | type == "object") and all(.files[]; (.source | type == "string") and (.sha256 | type == "string"))' "$ownership" >/dev/null; then
+      echo "Error: invalid Claude ownership manifest" >&2
+      exit 1
+    fi
+    local owned_rel owned_source owned_hash owned_file
+    while IFS=$'\t' read -r owned_rel owned_source owned_hash; do
+      [[ "$owned_source" == harnesses:* ]] || continue
+      owned_file="$target_dir/$owned_rel"
+      if [[ "$owned_rel" != rules/*.md || "${owned_rel#rules/}" == */* || "$owned_rel" =~ [[:cntrl:]] || "$owned_source" != "harnesses:$owned_rel" || ! -f "$owned_file" || -L "$owned_file" || "$(realpath -m -- "$owned_file")" != "$owned_file" || "$(sha256sum < "$owned_file" | cut -d' ' -f1)" != "$owned_hash" ]]; then
+        echo "Error: invalid or modified harness-owned Claude rule" >&2
+        exit 1
+      fi
+      unset 'file_map[$owned_rel]'
+    done < <(jq -r '.files | to_entries[] | [.key, .value.source, .value.sha256] | @tsv' "$ownership")
+  fi
 
   # The harness package owns its native Codex delivery. RevCon continues to
   # deliver profile-only skills, without becoming a second owner of the pack.

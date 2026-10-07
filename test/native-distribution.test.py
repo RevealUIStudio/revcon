@@ -95,5 +95,65 @@ class NativeDelivery(unittest.TestCase):
         self.assertEqual(destination.read_text(), "modified owner content")
 
 
+class ClaudeOwnership(unittest.TestCase):
+    def setUp(self):
+        NativeDelivery.setUp(self)
+        self.source = self.repo / "profiles/revealui/claude/rules/biome.md"
+        self.source.parent.mkdir(parents=True)
+        self.source.write_text("legacy profile body")
+        self.destination = self.target / ".claude/rules/biome.md"
+        self.destination.parent.mkdir(parents=True)
+        self.destination.write_text("canonical harness body")
+        self.content = self.target / ".revealui/custom/rules/biome.md"
+        self.content.parent.mkdir(parents=True)
+        self.content.write_text("canonical harness body")
+        (self.target / ".revealui/manager.json").write_text(json.dumps({"contentRoot": "custom"}))
+        self.ledger = self.target / ".claude/.revcon-manifest.json"
+        self.ledger.write_text(json.dumps({"mode": "copy", "editor": "claude", "profiles": ["revealui"], "files": {
+            "rules/biome.md": {"source": "harnesses:rules/biome.md", "sha256": hashlib.sha256(self.destination.read_bytes()).hexdigest()}
+        }}))
+
+    def link(self, *args, ok=True):
+        return NativeDelivery.link(self, "--editor", "claude", *args, ok=ok)
+
+    def test_preserves_canonical_owner_and_ledger_on_profile_reapply(self):
+        self.link()
+        self.assertEqual(self.destination.read_text(), "canonical harness body")
+        manifest = json.loads(self.ledger.read_text())
+        self.assertEqual(manifest["files"]["rules/biome.md"]["source"], "harnesses:rules/biome.md")
+        first = self.ledger.read_bytes()
+        self.source.write_text("new profile body")
+        self.link()
+        self.assertEqual(self.ledger.read_bytes(), first)
+        gate = subprocess.run(["bash", str(ROOT / "scripts/verify-copy-lockstep.sh"), "--target", str(self.target)], capture_output=True, text=True)
+        self.assertEqual(gate.returncode, 0, gate.stdout + gate.stderr)
+        self.content.write_text("stale manager content")
+        gate = subprocess.run(["bash", str(ROOT / "scripts/verify-copy-lockstep.sh"), "--target", str(self.target)], capture_output=True, text=True)
+        self.assertNotEqual(gate.returncode, 0)
+
+    def test_unlink_preserves_harness_owner_and_prunes_removed_profile_entries(self):
+        extra = self.source.parent / "profile-only.md"
+        extra.write_text("profile output")
+        self.link()
+        result = subprocess.run(["bash", str(ROOT / "unlink.sh"), "--target", str(self.target), "--editor", "claude"], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(self.destination.read_text(), "canonical harness body")
+        self.assertFalse((self.destination.parent / extra.name).exists())
+        self.assertEqual(set(json.loads(self.ledger.read_text())["files"]), {"rules/biome.md"})
+        gate = subprocess.run(["bash", str(ROOT / "scripts/verify-copy-lockstep.sh"), "--target", str(self.target)], capture_output=True, text=True)
+        self.assertEqual(gate.returncode, 0, gate.stdout + gate.stderr)
+
+    def test_modified_harness_file_fails_before_profile_writes(self):
+        extra = self.source.parent / "profile-only.md"
+        extra.write_text("profile output")
+        self.destination.write_text("owner pending edits")
+        before = self.ledger.read_bytes()
+        self.link(ok=False)
+        self.assertEqual(self.destination.read_text(), "owner pending edits")
+        self.assertEqual(self.ledger.read_bytes(), before)
+        self.assertFalse((self.destination.parent / extra.name).exists())
+
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -133,6 +133,14 @@ while IFS=$'\t' read -r rel src want; do
     continue
   fi
   have="$(hash_file "$abs")"
+  if [[ "$src" == harnesses:* ]]; then
+    content_root="$(jq -r '.contentRoot // "content"' "$TARGET/.revealui/manager.json" 2>/dev/null || echo content)"
+    canonical="$TARGET/.revealui/$content_root/$rel"
+    if [[ "$DOT" != ".claude" || "$rel" != rules/*.md || "${rel#rules/}" == */* || "$src" != "harnesses:$rel" || ! -f "$canonical" || -L "$canonical" || "$(realpath -m -- "$canonical")" != "$canonical" || "$(hash_file "$canonical")" != "$have" ]]; then
+      echo "  $file_rel — invalid harness ownership or drift from manager content" >&2
+      problems=$((problems + 1))
+    fi
+  fi
   if [[ "$have" != "$want" ]]; then
     echo "  $file_rel — content differs from the manifest (locally edited?)." >&2
     echo "    Edit the revcon profile ($src), then re-run link.sh --mode copy." >&2
