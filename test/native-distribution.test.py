@@ -119,6 +119,30 @@ class ClaudeOwnership(unittest.TestCase):
     def link(self, *args, ok=True):
         return NativeDelivery.link(self, "--editor", "claude", *args, ok=ok)
 
+    def test_preserves_manager_pointer_and_validates_its_canonical_owner(self):
+        rel = "rules/00-revealui-manager.md"
+        pointer = self.target / ".claude" / rel
+        canonical = self.target / ".revealui/adapters/claude-code.md"
+        canonical.parent.mkdir(parents=True)
+        body = "# Canonical manager pointer\n"
+        pointer.write_text(body)
+        canonical.write_text(body)
+        ledger = json.loads(self.ledger.read_text())
+        ledger["files"][rel] = {"source": "harnesses:adapters/claude-code.md", "sha256": hashlib.sha256(body.encode()).hexdigest()}
+        self.ledger.write_text(json.dumps(ledger))
+        profile = self.repo / "profiles/revealui/revealui/rules/00-revealui-manager.md"
+        profile.parent.mkdir(parents=True, exist_ok=True)
+        profile.write_text("profile collision")
+        self.link()
+        self.assertEqual(pointer.read_text(), body)
+        self.assertEqual(json.loads(self.ledger.read_text())["files"][rel]["source"], "harnesses:adapters/claude-code.md")
+        gate = ["bash", str(ROOT / "scripts/verify-copy-lockstep.sh"), "--target", str(self.target)]
+        self.assertEqual(subprocess.run(gate, capture_output=True).returncode, 0)
+        canonical.write_text("edited canonical source")
+        self.assertNotEqual(subprocess.run(gate, capture_output=True).returncode, 0)
+        self.link(ok=False)
+        self.assertEqual(pointer.read_text(), body)
+
     def test_preserves_canonical_owner_and_ledger_on_profile_reapply(self):
         self.link()
         self.assertEqual(self.destination.read_text(), "canonical harness body")

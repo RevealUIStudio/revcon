@@ -136,7 +136,12 @@ while IFS=$'\t' read -r rel src want; do
   if [[ "$src" == harnesses:* ]]; then
     content_root="$(jq -r '.contentRoot // "content"' "$TARGET/.revealui/manager.json" 2>/dev/null || echo content)"
     canonical="$TARGET/.revealui/$content_root/$rel"
-    if [[ "$DOT" != ".claude" || "$rel" != rules/*.md || "${rel#rules/}" == */* || "$src" != "harnesses:$rel" || ! -f "$canonical" || -L "$canonical" || "$(realpath -m -- "$canonical")" != "$canonical" || "$(hash_file "$canonical")" != "$have" ]]; then
+    expected_source="harnesses:$rel"
+    if [[ "$rel" == "rules/00-revealui-manager.md" ]]; then
+      expected_source="harnesses:adapters/claude-code.md"
+      canonical="$TARGET/.revealui/adapters/claude-code.md"
+    fi
+    if [[ "$DOT" != ".claude" || "$rel" != rules/*.md || "${rel#rules/}" == */* || "$src" != "$expected_source" || ! -f "$canonical" || -L "$canonical" || "$(realpath -m -- "$canonical")" != "$canonical" || "$(hash_file "$canonical")" != "$have" ]]; then
       echo "  $file_rel — invalid harness ownership or drift from manager content" >&2
       problems=$((problems + 1))
     fi
