@@ -18,7 +18,7 @@
     },
     "rules/durable-solutions.md": {
       "generatedFrom": ".revealui/content/rules/durable-solutions.md",
-      "sha256": "0f3f28c9067c92b94873acaf8cf297746b8e0504b3affffbf8b969b029ddd65e",
+      "sha256": "feb14a88fe7da1ede65610fc8b6ef27d7c1aef1d5b62371f6ba495599d543ea1",
       "source": "profiles/revealfleet/revealui/rules/durable-solutions.md"
     },
     "rules/exhaustive.md": {
