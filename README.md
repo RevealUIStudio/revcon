@@ -241,8 +241,15 @@ To regenerate after updating definitions:
 
 ```bash
 cd "$REVEALFLEET_ROOT/revealui"
-node packages/harnesses/dist/cli.js content export --output "$REVEALFLEET_ROOT/revcon"/harnesses
+node packages/harnesses/dist/cli.js content export \
+  --output "$REVEALFLEET_ROOT/revcon/harnesses" \
+  --rule-profile "$REVEALFLEET_ROOT/revcon/profiles/revealfleet/revealui/rules" \
+  --rule-id durable-solutions
 ```
+
+The optional `--rule-profile` and `--rule-id` arguments are repeatable. Select
+package-defined rules explicitly so adapted profile rules keep their owning
+source. Canonical export removes obsolete copies when a definition changes tier.
 
 ### OSS vs Pro
 

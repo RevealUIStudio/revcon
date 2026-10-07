@@ -1,11 +1,36 @@
 {
   "version": 1,
-  "generatedAt": "2026-03-29T03:40:38.636Z",
+  "generatedAt": "2026-10-07T09:09:19.743Z",
   "generators": [
+    "opencode",
+    "cursor",
+    "vscode",
     "claude-code",
-    "cursor"
+    "grok"
   ],
   "definitions": [
+    {
+      "id": "adapter-only",
+      "type": "rule",
+      "name": "Adapter Only",
+      "description": "Harness homes consume RevealUI-native policy and TRACKER; they must not full-copy shared hardlines",
+      "tier": "oss",
+      "canonicalPath": "rules/oss/adapter-only.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".revealui/content/rules/adapter-only.md"
+        ],
+        "grok": [
+          ".grok/rules/adapter-only.md"
+        ]
+      },
+      "tags": [
+        "harness",
+        "hardline",
+        "manager",
+        "adapters"
+      ]
+    },
     {
       "id": "agent-dispatch",
       "type": "rule",
@@ -15,15 +40,38 @@
       "canonicalPath": "rules/pro/agent-dispatch.md",
       "generatorPaths": {
         "claude-code": [
-          ".claude/rules/agent-dispatch.md"
+          ".revealui/content/rules/agent-dispatch.md"
         ],
-        "cursor": [
-          ".cursor/rules/agent-dispatch.mdc"
+        "grok": [
+          ".grok/skills/rule-agent-dispatch/SKILL.md"
         ]
       },
       "tags": [
         "agents",
         "coordination"
+      ]
+    },
+    {
+      "id": "ai-mechanics",
+      "type": "rule",
+      "name": "AI Mechanics",
+      "description": "Diagnose agent failures as model / harness / context / smart zone / primary source, not \"the AI\"",
+      "tier": "oss",
+      "canonicalPath": "rules/oss/ai-mechanics.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".revealui/content/rules/ai-mechanics.md"
+        ],
+        "grok": [
+          ".grok/rules/ai-mechanics.md"
+        ]
+      },
+      "tags": [
+        "agents",
+        "harness",
+        "context",
+        "sdlc",
+        "diagnosis"
       ]
     },
     {
@@ -35,10 +83,10 @@
       "canonicalPath": "rules/oss/biome.md",
       "generatorPaths": {
         "claude-code": [
-          ".claude/rules/biome.md"
+          ".revealui/content/rules/biome.md"
         ],
-        "cursor": [
-          ".cursor/rules/biome.mdc"
+        "grok": [
+          ".grok/skills/rule-biome/SKILL.md"
         ]
       },
       "tags": [
@@ -56,10 +104,10 @@
       "canonicalPath": "rules/oss/code-analysis-policy.md",
       "generatorPaths": {
         "claude-code": [
-          ".claude/rules/code-analysis-policy.md"
+          ".revealui/content/rules/code-analysis-policy.md"
         ],
-        "cursor": [
-          ".cursor/rules/code-analysis-policy.mdc"
+        "grok": [
+          ".grok/skills/rule-code-analysis-policy/SKILL.md"
         ]
       },
       "tags": [
@@ -68,24 +116,91 @@
       ]
     },
     {
+      "id": "code-over-docs",
+      "type": "rule",
+      "name": "Code Over Docs",
+      "description": "Source code defines system behavior; docs describe it. On disagreement, trust code and fix the doc.",
+      "tier": "oss",
+      "canonicalPath": "rules/oss/code-over-docs.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".revealui/content/rules/code-over-docs.md"
+        ],
+        "grok": [
+          ".grok/rules/code-over-docs.md"
+        ]
+      },
+      "tags": [
+        "docs",
+        "sdlc",
+        "hardline",
+        "truth"
+      ]
+    },
+    {
       "id": "database",
       "type": "rule",
       "name": "Database Conventions",
-      "description": "Single Neon-primary PostgreSQL database (Drizzle ORM, pgvector, ElectricSQL) conventions and query patterns",
+      "description": "NeonDB (PostgreSQL) primary store, Drizzle ORM, and migration discipline",
       "tier": "oss",
       "canonicalPath": "rules/oss/database.md",
       "generatorPaths": {
         "claude-code": [
-          ".claude/rules/database.md"
+          ".revealui/content/rules/database.md"
         ],
-        "cursor": [
-          ".cursor/rules/database.mdc"
+        "grok": [
+          ".grok/skills/rule-database/SKILL.md"
         ]
       },
       "tags": [
         "database",
         "architecture",
         "drizzle"
+      ]
+    },
+    {
+      "id": "disposition-actions",
+      "type": "rule",
+      "name": "Disposition Actions",
+      "description": "Agent work is proposal-shaped by default; merge, gate labels, force-push, and repo mutation need named owner authorization",
+      "tier": "oss",
+      "canonicalPath": "rules/oss/disposition-actions.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".revealui/content/rules/disposition-actions.md"
+        ],
+        "grok": [
+          ".grok/rules/disposition-actions.md"
+        ]
+      },
+      "tags": [
+        "git",
+        "security",
+        "hardline",
+        "governance"
+      ]
+    },
+    {
+      "id": "durable-solutions",
+      "type": "rule",
+      "name": "Durable Solutions",
+      "description": "Root-cause fixes only; never propose workarounds or ship one-offs; inventory existing debt",
+      "tier": "oss",
+      "canonicalPath": "rules/oss/durable-solutions.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".revealui/content/rules/durable-solutions.md"
+        ],
+        "grok": [
+          ".grok/rules/durable-solutions.md"
+        ]
+      },
+      "tags": [
+        "sdlc",
+        "hardline",
+        "hotfix",
+        "quality",
+        "no-workarounds"
       ]
     },
     {
@@ -97,10 +212,10 @@
       "canonicalPath": "rules/oss/monorepo.md",
       "generatorPaths": {
         "claude-code": [
-          ".claude/rules/monorepo.md"
+          ".revealui/content/rules/monorepo.md"
         ],
-        "cursor": [
-          ".cursor/rules/monorepo.mdc"
+        "grok": [
+          ".grok/rules/monorepo.md"
         ]
       },
       "tags": [
@@ -110,18 +225,41 @@
       ]
     },
     {
+      "id": "npm-oidc-publish",
+      "type": "rule",
+      "name": "npm OIDC publish only",
+      "description": "Never npm login, never GAT or _authToken, never local npm/pnpm publish; only GitHub Actions OIDC on main",
+      "tier": "oss",
+      "canonicalPath": "rules/oss/npm-oidc-publish.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".revealui/content/rules/npm-oidc-publish.md"
+        ],
+        "grok": [
+          ".grok/rules/npm-oidc-publish.md"
+        ]
+      },
+      "tags": [
+        "npm",
+        "oidc",
+        "hardline",
+        "publish",
+        "supply-chain"
+      ]
+    },
+    {
       "id": "parameterization",
       "type": "rule",
       "name": "Parameterization Conventions",
-      "description": "Never hardcode config values — extract, type, default, and make overridable",
+      "description": "Never hardcode config values  -  extract, type, default, and make overridable",
       "tier": "oss",
       "canonicalPath": "rules/oss/parameterization.md",
       "generatorPaths": {
         "claude-code": [
-          ".claude/rules/parameterization.md"
+          ".revealui/content/rules/parameterization.md"
         ],
-        "cursor": [
-          ".cursor/rules/parameterization.mdc"
+        "grok": [
+          ".grok/skills/rule-parameterization/SKILL.md"
         ]
       },
       "tags": [
@@ -130,23 +268,89 @@
       ]
     },
     {
+      "id": "public-issue-redaction",
+      "type": "rule",
+      "name": "Public Issue Redaction",
+      "description": "HARDLINE: do not publish attack writeups, unfixed-finding maps, or soft-enforcement notes on public GitHub",
+      "tier": "oss",
+      "canonicalPath": "rules/oss/public-issue-redaction.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".revealui/content/rules/public-issue-redaction.md"
+        ],
+        "grok": [
+          ".grok/rules/public-issue-redaction.md"
+        ]
+      },
+      "tags": [
+        "security",
+        "hardline",
+        "github",
+        "redaction"
+      ]
+    },
+    {
+      "id": "quality-over-speed",
+      "type": "rule",
+      "name": "Quality Over Speed",
+      "description": "Prefer correctness, proof, and durable design over throughput; never trade quality for concurrent session velocity",
+      "tier": "oss",
+      "canonicalPath": "rules/oss/quality-over-speed.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".revealui/content/rules/quality-over-speed.md"
+        ],
+        "grok": [
+          ".grok/rules/quality-over-speed.md"
+        ]
+      },
+      "tags": [
+        "quality",
+        "sdlc",
+        "hardline"
+      ]
+    },
+    {
       "id": "skills-usage",
       "type": "rule",
       "name": "Skill Auto-Use Guidelines",
-      "description": "When to proactively invoke skills vs wait for explicit user request",
+      "description": "Assess actual skill inputs, outputs, effects, and verification before invocation",
       "tier": "pro",
       "canonicalPath": "rules/pro/skills-usage.md",
       "generatorPaths": {
         "claude-code": [
-          ".claude/rules/skills-usage.md"
+          ".revealui/content/rules/skills-usage.md"
         ],
-        "cursor": [
-          ".cursor/rules/skills-usage.mdc"
+        "grok": [
+          ".grok/skills/rule-skills-usage/SKILL.md"
         ]
       },
       "tags": [
         "skills",
         "automation"
+      ]
+    },
+    {
+      "id": "stream-safe-secrets",
+      "type": "rule",
+      "name": "Stream-Safe Secrets",
+      "description": "Never put secret values on argv or stream-captured TTY; use revvault run / with-secrets; vault-private only for full print",
+      "tier": "oss",
+      "canonicalPath": "rules/oss/stream-safe-secrets.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".revealui/content/rules/stream-safe-secrets.md"
+        ],
+        "grok": [
+          ".grok/rules/stream-safe-secrets.md"
+        ]
+      },
+      "tags": [
+        "secrets",
+        "hardline",
+        "revvault",
+        "stream",
+        "obs"
       ]
     },
     {
@@ -158,12 +362,12 @@
       "canonicalPath": "rules/oss/tailwind.md",
       "generatorPaths": {
         "claude-code": [
-          ".claude/rules/tailwind.md",
-          ".claude/skills/tailwind-4-docs/SKILL.md",
-          ".claude/skills/tailwind-4-docs/references/gotchas.md"
+          ".revealui/content/rules/tailwind.md",
+          ".revealui/content/skills/tailwind-4-docs/SKILL.md",
+          ".revealui/content/skills/tailwind-4-docs/references/gotchas.md"
         ],
-        "cursor": [
-          ".cursor/rules/tailwind.mdc"
+        "grok": [
+          ".grok/skills/rule-tailwind/SKILL.md"
         ]
       },
       "tags": [
@@ -173,24 +377,91 @@
       ]
     },
     {
+      "id": "token-economy",
+      "type": "rule",
+      "name": "Token Economy",
+      "description": "Spend tokens only where they buy value: auto-notify over poll, match loop cadence, stop when not advancing",
+      "tier": "oss",
+      "canonicalPath": "rules/oss/token-economy.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".revealui/content/rules/token-economy.md"
+        ],
+        "grok": [
+          ".grok/rules/token-economy.md"
+        ]
+      },
+      "tags": [
+        "sdlc",
+        "hardline",
+        "cost",
+        "agents",
+        "harness"
+      ]
+    },
+    {
+      "id": "tracker-first",
+      "type": "rule",
+      "name": "Tracker First",
+      "description": "Open docs/TRACKER.md first; gaps and lanes are the only execution units; no dual-home backlogs",
+      "tier": "oss",
+      "canonicalPath": "rules/oss/tracker-first.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".revealui/content/rules/tracker-first.md"
+        ],
+        "grok": [
+          ".grok/rules/tracker-first.md"
+        ]
+      },
+      "tags": [
+        "coordination",
+        "tracker",
+        "sdlc"
+      ]
+    },
+    {
       "id": "unused-declarations",
       "type": "rule",
       "name": "Unused Declarations Policy",
-      "description": "Never suppress unused warnings without determining if code is incomplete — implement first",
+      "description": "HARDLINE every session: never silence unused with underscore rename; implement, redesign the signature, or delete",
       "tier": "oss",
       "canonicalPath": "rules/oss/unused-declarations.md",
       "generatorPaths": {
         "claude-code": [
-          ".claude/rules/unused-declarations.md"
+          ".revealui/content/rules/unused-declarations.md"
         ],
-        "cursor": [
-          ".cursor/rules/unused-declarations.mdc"
+        "grok": [
+          ".grok/rules/unused-declarations.md"
         ]
       },
       "tags": [
         "lint",
         "quality",
-        "policy"
+        "policy",
+        "hardline"
+      ]
+    },
+    {
+      "id": "versioning",
+      "type": "rule",
+      "name": "SemVer and 1.0 contract",
+      "description": "0.x until real external consumers + stable contract; ai@1.x is a named exception; private packages never 1.0-publish",
+      "tier": "oss",
+      "canonicalPath": "rules/oss/versioning.md",
+      "generatorPaths": {
+        "claude-code": [
+          ".revealui/content/rules/versioning.md"
+        ],
+        "grok": [
+          ".grok/skills/rule-versioning/SKILL.md"
+        ]
+      },
+      "tags": [
+        "semver",
+        "release",
+        "1.0",
+        "changesets"
       ]
     },
     {
@@ -201,8 +472,14 @@
       "tier": "oss",
       "canonicalPath": "commands/oss/audit.md",
       "generatorPaths": {
+        "opencode": [
+          ".opencode/commands/audit.md"
+        ],
         "claude-code": [
-          ".claude/commands/audit.md"
+          ".revealui/content/commands/audit.md"
+        ],
+        "grok": [
+          ".grok/commands/audit.md"
         ]
       }
     },
@@ -214,9 +491,17 @@
       "tier": "oss",
       "canonicalPath": "commands/oss/gate.md",
       "generatorPaths": {
+        "opencode": [
+          ".opencode/commands/gate.md",
+          ".opencode/agents/gate-runner.md"
+        ],
         "claude-code": [
-          ".claude/commands/gate.md",
-          ".claude/agents/gate-runner.md"
+          ".revealui/content/commands/gate.md",
+          ".revealui/content/agents/gate-runner.md"
+        ],
+        "grok": [
+          ".grok/commands/gate.md",
+          ".grok/agents/gate-runner.md"
         ]
       }
     },
@@ -228,8 +513,14 @@
       "tier": "oss",
       "canonicalPath": "commands/oss/new-package.md",
       "generatorPaths": {
+        "opencode": [
+          ".opencode/commands/new-package.md"
+        ],
         "claude-code": [
-          ".claude/commands/new-package.md"
+          ".revealui/content/commands/new-package.md"
+        ],
+        "grok": [
+          ".grok/commands/new-package.md"
         ]
       }
     },
@@ -237,12 +528,18 @@
       "id": "stripe-best-practices",
       "type": "command",
       "name": "Stripe Best Practices",
-      "description": "Apply when working on Stripe billing, payments, webhooks, subscriptions, or checkout flows (apps/api/src/routes/billing.ts, packages/services).",
+      "description": "Apply when working on Stripe billing, payments, webhooks, subscriptions, or checkout flows (apps/server/src/routes/billing.ts, packages/services).",
       "tier": "pro",
       "canonicalPath": "commands/pro/stripe-best-practices.md",
       "generatorPaths": {
+        "opencode": [
+          ".opencode/commands/stripe-best-practices.md"
+        ],
         "claude-code": [
-          ".claude/commands/stripe-best-practices.md"
+          ".revealui/content/commands/stripe-best-practices.md"
+        ],
+        "grok": [
+          ".grok/commands/stripe-best-practices.md"
         ]
       }
     },
@@ -254,8 +551,14 @@
       "tier": "oss",
       "canonicalPath": "agents/oss/builder.md",
       "generatorPaths": {
+        "opencode": [
+          ".opencode/agents/builder.md"
+        ],
         "claude-code": [
-          ".claude/agents/builder.md"
+          ".revealui/content/agents/builder.md"
+        ],
+        "grok": [
+          ".grok/agents/builder.md"
         ]
       }
     },
@@ -267,8 +570,14 @@
       "tier": "pro",
       "canonicalPath": "agents/pro/docs-sync.md",
       "generatorPaths": {
+        "opencode": [
+          ".opencode/agents/docs-sync.md"
+        ],
         "claude-code": [
-          ".claude/agents/docs-sync.md"
+          ".revealui/content/agents/docs-sync.md"
+        ],
+        "grok": [
+          ".grok/agents/docs-sync.md"
         ]
       }
     },
@@ -280,8 +589,14 @@
       "tier": "pro",
       "canonicalPath": "agents/pro/gate-runner.md",
       "generatorPaths": {
+        "opencode": [
+          ".opencode/agents/gate-runner.md"
+        ],
         "claude-code": [
-          ".claude/agents/gate-runner.md"
+          ".revealui/content/agents/gate-runner.md"
+        ],
+        "grok": [
+          ".grok/agents/gate-runner.md"
         ]
       }
     },
@@ -293,8 +608,14 @@
       "tier": "oss",
       "canonicalPath": "agents/oss/linter.md",
       "generatorPaths": {
+        "opencode": [
+          ".opencode/agents/linter.md"
+        ],
         "claude-code": [
-          ".claude/agents/linter.md"
+          ".revealui/content/agents/linter.md"
+        ],
+        "grok": [
+          ".grok/agents/linter.md"
         ]
       }
     },
@@ -306,8 +627,14 @@
       "tier": "pro",
       "canonicalPath": "agents/pro/security-reviewer.md",
       "generatorPaths": {
+        "opencode": [
+          ".opencode/agents/security-reviewer.md"
+        ],
         "claude-code": [
-          ".claude/agents/security-reviewer.md"
+          ".revealui/content/agents/security-reviewer.md"
+        ],
+        "grok": [
+          ".grok/agents/security-reviewer.md"
         ]
       }
     },
@@ -319,8 +646,14 @@
       "tier": "oss",
       "canonicalPath": "agents/oss/tester.md",
       "generatorPaths": {
+        "opencode": [
+          ".opencode/agents/tester.md"
+        ],
         "claude-code": [
-          ".claude/agents/tester.md"
+          ".revealui/content/agents/tester.md"
+        ],
+        "grok": [
+          ".grok/agents/tester.md"
         ]
       }
     },
@@ -328,12 +661,12 @@
       "id": "db-migrate",
       "type": "skill",
       "name": "Database Migration",
-      "description": "Create and apply Drizzle ORM migrations against the single Neon-primary PostgreSQL database",
+      "description": "Create and apply Drizzle ORM migrations with dual-DB boundary checks (NeonDB vs Supabase)",
       "tier": "pro",
       "canonicalPath": "skills/pro/db-migrate.md",
       "generatorPaths": {
         "claude-code": [
-          ".claude/skills/db-migrate/SKILL.md"
+          ".revealui/content/skills/db-migrate/SKILL.md"
         ]
       }
     },
@@ -346,7 +679,7 @@
       "canonicalPath": "skills/oss/preflight.md",
       "generatorPaths": {
         "claude-code": [
-          ".claude/skills/preflight/SKILL.md"
+          ".revealui/content/skills/preflight/SKILL.md"
         ]
       }
     },
@@ -354,12 +687,12 @@
       "id": "revealui-conventions",
       "type": "skill",
       "name": "RevealUI Conventions",
-      "description": "RevealUI coding conventions for any code task — writing, editing, reviewing, creating,\nfixing, refactoring, changing, adding, or updating TypeScript, React, CSS, or config files.\nCovers TypeScript strict mode, ES Modules, Biome formatting, Tailwind v4 syntax,\nconventional commits, monorepo workspace protocol, feature gating, parameterization,\nand unused declaration policy.",
+      "description": "RevealUI coding conventions for any code task  -  writing, editing, reviewing, creating,\nfixing, refactoring, changing, adding, or updating TypeScript, React, CSS, or config files.\nCovers TypeScript strict mode, ES Modules, Biome formatting, Tailwind v4 syntax,\nconventional commits, monorepo workspace protocol, feature gating, parameterization,\nand unused declaration policy.",
       "tier": "oss",
       "canonicalPath": "skills/oss/revealui-conventions.md",
       "generatorPaths": {
         "claude-code": [
-          ".claude/skills/revealui-conventions/SKILL.md"
+          ".revealui/content/skills/revealui-conventions/SKILL.md"
         ]
       }
     },
@@ -367,12 +700,12 @@
       "id": "revealui-db",
       "type": "skill",
       "name": "RevealUI Database",
-      "description": "RevealUI database conventions for any task involving database, schema, query, migration,\nDrizzle ORM, Neon, PostgreSQL, pgvector, vectors, embeddings, or data modeling.\nCovers the single Neon-primary database and its pgvector tables.",
+      "description": "RevealUI database conventions for any task involving database, schema, query, migration,\nDrizzle ORM, NeonDB, PostgreSQL, vectors, embeddings, or data modeling. NeonDB is the\nprimary store; legacy Supabase code has been phased out and must not be reintroduced.",
       "tier": "pro",
       "canonicalPath": "skills/pro/revealui-db.md",
       "generatorPaths": {
         "claude-code": [
-          ".claude/skills/revealui-db/SKILL.md"
+          ".revealui/content/skills/revealui-db/SKILL.md"
         ]
       }
     },
@@ -380,12 +713,12 @@
       "id": "revealui-debugging",
       "type": "skill",
       "name": "RevealUI Debugging",
-      "description": "Systematic debugging workflow for RevealUI. Use when encountering any bug, test failure,\nunexpected behavior, error, or broken functionality. Prevents shotgun debugging.",
+      "description": "Disciplined bug diagnosis for RevealUI: build a red-capable feedback loop first, then minimise, multi-hypothesis, instrument, fix, and regression-test. Use on bugs, failures, or unexpected behavior.",
       "tier": "pro",
       "canonicalPath": "skills/pro/revealui-debugging.md",
       "generatorPaths": {
         "claude-code": [
-          ".claude/skills/revealui-debugging/SKILL.md"
+          ".revealui/content/skills/revealui-debugging/SKILL.md"
         ]
       }
     },
@@ -393,12 +726,12 @@
       "id": "revealui-review",
       "type": "skill",
       "name": "RevealUI Code Review",
-      "description": "Code review checklist for RevealUI. Use when reviewing code, completing a feature,\nchecking quality, or before committing. Invoke explicitly with $revealui-review.",
+      "description": "Code review for RevealUI: run Standards and Spec axes in parallel before merge or \"done\". Use when reviewing code, completing a feature, checking quality, or before committing. Invoke with $revealui-review.",
       "tier": "pro",
       "canonicalPath": "skills/pro/revealui-review.md",
       "generatorPaths": {
         "claude-code": [
-          ".claude/skills/revealui-review/SKILL.md"
+          ".revealui/content/skills/revealui-review/SKILL.md"
         ]
       }
     },
@@ -406,12 +739,12 @@
       "id": "revealui-safety",
       "type": "skill",
       "name": "RevealUI Safety",
-      "description": "RevealUI safety guardrails for any code task — editing, writing, creating, fixing,\nrefactoring, changing, adding, updating, or removing files. Protects credentials,\nenforces import boundaries, ensures code quality, and verifies work before completion.",
+      "description": "RevealUI safety guardrails for any code task  -  editing, writing, creating, fixing,\nrefactoring, changing, adding, updating, or removing files. Protects credentials,\nenforces import boundaries, ensures code quality, and verifies work before completion.",
       "tier": "oss",
       "canonicalPath": "skills/oss/revealui-safety.md",
       "generatorPaths": {
         "claude-code": [
-          ".claude/skills/revealui-safety/SKILL.md"
+          ".revealui/content/skills/revealui-safety/SKILL.md"
         ]
       }
     },
@@ -419,12 +752,12 @@
       "id": "revealui-tdd",
       "type": "skill",
       "name": "RevealUI TDD",
-      "description": "Test-driven development workflow for RevealUI. Use when implementing any feature,\nfixing bugs, adding functionality, or writing new code. Enforces write-test-first,\nred-green-refactor cycle. Works with Vitest and React Testing Library.",
+      "description": "Test-driven development for RevealUI: agree seams first, then red-green vertical slices with Vitest. Use when implementing features, fixing bugs, or writing tests.",
       "tier": "pro",
       "canonicalPath": "skills/pro/revealui-tdd.md",
       "generatorPaths": {
         "claude-code": [
-          ".claude/skills/revealui-tdd/SKILL.md"
+          ".revealui/content/skills/revealui-tdd/SKILL.md"
         ]
       }
     },
@@ -437,7 +770,7 @@
       "canonicalPath": "skills/oss/revealui-testing.md",
       "generatorPaths": {
         "claude-code": [
-          ".claude/skills/revealui-testing/SKILL.md"
+          ".revealui/content/skills/revealui-testing/SKILL.md"
         ]
       }
     },
@@ -450,8 +783,8 @@
       "canonicalPath": "skills/oss/tailwind-4-docs.md",
       "generatorPaths": {
         "claude-code": [
-          ".claude/skills/tailwind-4-docs/SKILL.md",
-          ".claude/skills/tailwind-4-docs/references/gotchas.md"
+          ".revealui/content/skills/tailwind-4-docs/SKILL.md",
+          ".revealui/content/skills/tailwind-4-docs/references/gotchas.md"
         ]
       }
     }

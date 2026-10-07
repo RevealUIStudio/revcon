@@ -110,7 +110,7 @@ for canon_root in "${CANON_ROOTS[@]}"; do
         echo "[rules-lockstep] DRIFT rule=$name" >&2
         echo "  canonical: $canon" >&2
         echo "  other:     $surface" >&2
-        echo "  fix:       cp '$canon' '$surface'" >&2
+        echo "  fix:       regenerate canonical exports and selected native profile rules with revealui-harnesses content export" >&2
         fail=1
       fi
     done

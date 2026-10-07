@@ -29,7 +29,7 @@ Follow these conventions for ALL code in the RevealUI monorepo.
 - Chore: `chore/<short-description>`
 
 ### Identity
-- Use the committer's own verified GitHub noreply identity from the supported Git configuration; do not substitute another author.
+- RevealUI Studio <founder@revealui.com>
 
 ## Monorepo
 

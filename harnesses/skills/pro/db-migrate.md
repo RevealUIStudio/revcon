@@ -1,15 +1,15 @@
 # Database Migration Workflow
 
-Guide for creating and reviewing Drizzle ORM migrations through the single Neon-primary PostgreSQL store. Apply migrations only within the authorized development/release workflow.
+Guide for creating and applying Drizzle ORM migrations in the RevealUI dual-database architecture.
 
 ## Pre-Flight Checks
 
 Before creating a migration:
 
-1. **Use the owning persistence boundary**:
-   - All application persistence goes through `@revealui/db` and its Drizzle schema, including sessions and pgvector data
-   - Inspect the current exports in `packages/db/src/schema/`; vector tables use the same PostgreSQL client
-   - Do not introduce a second database, vector/auth SDK, or Supabase runtime client
+1. **Identify the target database**:
+   - **NeonDB** (REST content): users, sessions, collections, products, orders, licenses, pages, sites, tickets, agents, api-keys, GDPR
+   - **Supabase** (vectors/auth): embeddings, AI memory storage, real-time auth
+   - If unsure, check `packages/db/src/schema/rest.ts` (NeonDB) vs `packages/db/src/schema/vector.ts` (Supabase)
 
 2. **Check existing schema** for conflicts:
    ```bash
@@ -79,14 +79,15 @@ If you added new tables or columns that are exposed via the API:
 2. Export from `packages/contracts/src/index.ts`
 3. Update any API routes that use the new schema
 
-## Persistence Boundary
+## Dual-DB Boundary Rules
 
-| If your change touches... | Owning schema | Client |
-|---------------------------|---------------|--------|
-| Content, users, sessions, products, orders | `packages/db/src/schema/` | `@revealui/db` Drizzle client |
-| Vector embeddings, AI memory | `packages/db/src/schema/vector.ts` | The same `@revealui/db` Drizzle client |
+| If your change touches... | Put it in... | Client |
+|---------------------------|-------------|--------|
+| Content, users, sessions, products, orders | `packages/db/src/schema/` (NeonDB barrel) | Drizzle ORM |
+| Vector embeddings, AI memory | `packages/db/src/schema/vector.ts` | Supabase client |
+| Real-time auth helpers | `packages/db/src/auth/` | Supabase client |
 
-Auth/session behavior belongs to `packages/auth/` and uses the owning database boundary. Extend that primitive instead of creating a parallel store or auth client.
+**Never mix** NeonDB and Supabase operations in the same module.
 
 ## Rollback
 
