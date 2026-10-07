@@ -1,6 +1,6 @@
 # Versioning Convention
 
-Authoritative rule: **`~/.claude/rules/versioning.md`** (global). All RevealUI packages and artifacts follow it.
+Authoritative rule: **`.revealui/content/rules/versioning.md`** in the fleet `.revealui`. All RevealUI packages and artifacts follow it.
 
 Summary:
 - Every new versioned artifact starts at `0.1.0`. Never `1.0.0`.

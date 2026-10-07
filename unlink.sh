@@ -25,7 +25,7 @@ Usage: unlink.sh [OPTIONS]
 
 Options:
   --target DIR     Project directory to unlink from (required)
-  --editor NAME    Editor to unlink: revealui, cursor, zed, vscode, claude, agents, all (default: all)
+  --editor NAME    Editor to unlink: revealui, cursor, zed, vscode, claude, grok, agents, all (default: all)
   --skip NAME      Skip a specific editor (repeatable, comma-separated also works)
   --dry-run        Show what would be done without making changes
   -h, --help       Show this help
@@ -79,6 +79,7 @@ declare -A EDITOR_DIRS=(
   [zed]=".zed"
   [vscode]=".vscode"
   [claude]=".claude"
+  [grok]=".grok"
   [agents]=".agents"
 )
 
@@ -175,6 +176,18 @@ unlink_editor() {
     fi
   fi
 
+  # Projection marker is not a manifest entry. Remove it only when it is ours.
+  local generated_from="$target_dir/.generated-from"
+  if [[ -f "$generated_from" && ! -L "$generated_from" ]] && grep -q '^generated from \.revealui' "$generated_from"; then
+    if $DRY_RUN; then
+      echo "  [remove] $generated_from"
+    else
+      rm "$generated_from"
+      echo "  [remove] .generated-from"
+    fi
+    ((REMOVED++)) || true
+  fi
+
   # Clean up empty subdirectories (bottom-up)
   if ! $DRY_RUN; then
     find "$target_dir" -type d -empty -delete 2>/dev/null || true
@@ -186,7 +199,7 @@ $DRY_RUN && echo "(dry run)"
 echo ""
 
 if [[ "$EDITOR" == "all" ]]; then
-  for e in revealui cursor zed vscode claude agents; do
+  for e in revealui cursor zed vscode claude grok agents; do
     if should_skip_editor "$e"; then
       echo "[$e] skipped (REVCON_SKIP_EDITORS / --skip)"
       continue

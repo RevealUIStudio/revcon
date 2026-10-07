@@ -1,4 +1,3 @@
-<!-- generated from .revealui/content/rules/extend-before-create.md -->
 # Extend Before Create — Obligatory Reuse and Consolidation
 
 **Status:** convention. Applies before building anything new.

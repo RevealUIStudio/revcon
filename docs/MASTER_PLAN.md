@@ -54,7 +54,7 @@ RevCon is not Pro-gated. It is the canonical editor/agent config product for Rev
 
 | Other product | Relationship |
 |---|---|
-| **RevealUI** | Primary consumer of copy-mode Claude rules + agents |
+| **RevealUI** | Primary consumer of native `.revealui/content`, with `.claude` and `.grok` generated from it |
 | **RevKit** | Host/bootstrap; RevCon overlays project configs |
 | **Others** | Independent |
 

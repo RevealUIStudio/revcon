@@ -1,4 +1,3 @@
-<!-- generated from .revealui/content/rules/secrets.md -->
 # Secrets and Key Management — One Vault Is the Source of Truth
 
 ## The rule

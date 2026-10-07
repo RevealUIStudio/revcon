@@ -12,6 +12,6 @@ Run `pnpm install` first to establish symlinks in this worktree.
 
 ## Rules
 - Biome is the sole linter — fix all Biome errors
-- Follow the unused declarations policy in `.claude/rules/unused-declarations.md`
+- Follow the unused declarations policy in `.revealui/content/rules/unused-declarations.md`
 - Report remaining warnings that cannot be auto-fixed
 - Do NOT suppress lint rules without justification

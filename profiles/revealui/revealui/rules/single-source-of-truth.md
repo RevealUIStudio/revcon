@@ -5,7 +5,7 @@
 All agent coordination, planning, and status tracking flows through ONE location per repo:
 
 ```
-.claude/workboard.md          — agent coordination
+.revealui/workboard.md          - agent coordination
 internal coordination hub     — planning & task tracking (master plan)
 ```
 
@@ -21,7 +21,7 @@ reads from and writes to this hub — regardless of which working tree they were
 
 | Artifact | Canonical Location | Notes |
 |----------|-------------------|-------|
-| Workboard (agent sessions, tasks, files) | `.claude/workboard.md` | Ephemeral coordination only |
+| Workboard (agent sessions, tasks, files) | `.revealui/workboard.md` | Ephemeral coordination only |
 | Master Plan / free surfaces | Internal coordination hub (`TRACKER`, gaps, lanes) | Durable planning; in-repo `docs/MASTER_PLAN.md` is a retired public stub |
 | Memory (persistent cross-session) | Project memory directory | Project-scoped, do not duplicate |
 | Plans (ephemeral session) | In-conversation only (EnterPlanMode) | NEVER write to a stray `plans/` directory — they rot |
@@ -36,7 +36,7 @@ reads from and writes to this hub — regardless of which working tree they were
 
 ## On Session Start
 
-1. Read `.claude/workboard.md` — check other agents' activity
+1. Read `.revealui/workboard.md` - check other agents' activity
 2. Read hub TRACKER / owning gap or lane — verify task alignment (not the in-repo stub as plan of record)
 3. Update your workboard row with current task
 

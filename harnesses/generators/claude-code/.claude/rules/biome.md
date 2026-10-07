@@ -35,7 +35,7 @@ Pre-commit hook runs `biome check --write` on staged `*.{ts,tsx,js,jsx}` files v
 
 ## Unused Variables — Special Protocol
 
-**Before suppressing any unused variable or import warning, read `.claude/rules/unused-declarations.md`.**
+**Before suppressing any unused variable or import warning, read `.revealui/content/rules/unused-declarations.md`.**
 
 The mandatory decision tree there must be followed. Unused declarations frequently indicate incomplete implementations that need to be finished, not suppressed. Silencing the warning without completing the code creates permanent dead stubs.
 

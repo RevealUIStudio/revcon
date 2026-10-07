@@ -1,4 +1,3 @@
-<!-- generated from .revealui/content/rules/planning.md -->
 # Planning Convention
 
 ## Fleet plan (canonical cross-product)

@@ -14,3 +14,17 @@ Thumbs.db
 !.claude/agents/
 !.claude/skills/
 !.claude/.revcon-manifest.json
+!.claude/.generated-from
+
+# Native policy is the source. Vendor projections are generated from it.
+.revealui/*
+!.revealui/content/
+!.revealui/.revcon-manifest.json
+
+.grok/*
+!.grok/rules/
+!.grok/agents/
+!.grok/skills/
+!.grok/commands/
+!.grok/.generated-from
+!.grok/.revcon-manifest.json

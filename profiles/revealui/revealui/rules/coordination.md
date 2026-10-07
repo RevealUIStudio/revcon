@@ -31,7 +31,7 @@ Agent identity is resolved automatically by `session-start.js` using a 3-tier de
 
 ### Configuration
 
-Profile mappings are in `~/.claude/agent-profiles.json`:
+Profile mappings live in the fleet `.revealui` (`agent-profiles.json`). Vendor homes are adapters:
 - `wt_profiles`: maps Windows Terminal profile GUID → identity
 - `default_zed_extension_name` / `default_zed_terminal_name`: override Zed auto-detection names
 

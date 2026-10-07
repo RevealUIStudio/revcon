@@ -18,7 +18,7 @@
 harnesses/generators/claude-code/.claude/skills/revealui-safety/SKILL.md    lts-drive
 harnesses/skills/oss/revealui-safety.md                                     lts-drive
 profiles/revealui/agents/skills/revealui-safety/SKILL.md                    lts-drive
-profiles/revealui/claude/skills/revealui-safety/SKILL.md                    lts-drive
+profiles/revealui/revealui/skills/revealui-safety/SKILL.md                  lts-drive
 
 
 # By-design: the anti-regression CI job must name the /mnt/c/Users literal in

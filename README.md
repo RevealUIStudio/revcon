@@ -72,12 +72,12 @@ Shared RevealUI skills ship on three surfaces that must stay **byte-identical**:
 
 | Role | Path |
 |------|------|
-| **Canonical (edit here)** | `profiles/revealui/claude/skills/<name>/SKILL.md` |
+| **Canonical (edit here)** | `profiles/revealui/revealui/skills/<name>/SKILL.md` |
 | Lockstep copy | `profiles/revealui/agents/skills/<name>/SKILL.md` |
 | Lockstep copy | `harnesses/generators/claude-code/.claude/skills/<name>/SKILL.md` |
 
 ```bash
-# After editing a shared skill under profiles/revealui/claude/skills/:
+# After editing a shared skill under profiles/revealui/revealui/skills/:
 bash scripts/sync-skill-copies.sh
 bash scripts/check-skill-lockstep.sh   # also a CI job: "Skill multi-copy lockstep"
 ```
@@ -108,7 +108,7 @@ target repo see none of the distributed config. For repos that need the config
 to travel with the repo, use copy mode:
 
 ```bash
-./link.sh --target ~/revealfleet/revealui --profile revealfleet --profile revealui --editor claude --mode copy
+./link.sh --target ~/revealfleet/revealui --profile revealfleet --profile revealui --mode copy
 ```
 
 Copy mode materializes real files instead of symlinks, writes a deterministic
@@ -196,25 +196,27 @@ installation, and no hand-copied alias or machine override is a migration.
 
 | Editor | Dot-dir | Status |
 |--------|---------|--------|
-| RevealUI | `.revealui/content/` | First-party default |
-| Claude | `.claude/` | Optional third-party projection |
+| RevealUI | `.revealui/content/` | First-party source, always written first |
+| Claude | `.claude/` | Projection generated from `.revealui` |
+| Grok | `.grok/` | Projection generated from `.revealui` |
 | Cursor | `.cursor/` | Full support |
 | Zed | `.zed/` | Full support |
 | VS Code | `.vscode/` | Placeholder |
 
 A selected native editor fails clearly when no native files exist, including
-empty profile directories; it never falls back to Claude sources. The product
-`revealui` profile currently contains vendor overlays, so use the native
-`revealfleet` profile for fleet policy and the maintained `revealui-harnesses`
-manager for product definitions. Request vendor overlays explicitly.
+empty profile directories. It never falls back to a vendor profile as the
+source. The product `revealui` profile source is `profiles/revealui/revealui/`.
+Use the native `revealfleet` profile for fleet policy.
 
-`--editor revealui` is the default and writes native content from
-`profiles/<profile>/revealui/`. Vendor adapters require explicit `--editor NAME`
-or `--editor all`. Claude projects native content into `.claude/`; native sources
-win same-path collisions and unique explicit Claude-only overlays remain.
-Other adapters use `base/<editor>/` and `profiles/<profile>/<editor>/`;
-`agents` writes `.agents/`. These do not link `harnesses/*`, which ships
-separately via the `revealui-harnesses` CLI. See [Harnesses Content](#harnesses-content).
+`--editor revealui` is the default. Whenever native sources exist, `link.sh`
+writes `.revealui/content/` first and generates `.claude` and `.grok` from it,
+each with a `generated from .revealui` marker, whatever `--editor` is passed.
+`--editor claude` and `--editor grok` do the same. They do not treat a vendor
+profile directory as the policy source. Unique non-colliding Claude overlay
+files can still be installed beside the projection. Other adapters use
+`base/<editor>/` and `profiles/<profile>/<editor>/`; `agents` writes `.agents/`.
+These do not link `harnesses/*`, which ships separately via the
+`revealui-harnesses` CLI. See [Harnesses Content](#harnesses-content).
 
 ## Harnesses Content
 
@@ -302,8 +304,8 @@ first-party policy without vendor output:
 ```
 
 This writes `.revealui/content/rules/` and `.revealui/.revcon-manifest.json`
-with `content/rules/...` keys and native profile source hashes. Claude is an
-optional third-party projection requested with `--editor claude`; native
-policy wins collisions while unique Claude-only profile files are retained.
-Do not hand-copy or edit installed policy. Edit its owning profile and use
-the maintained materializer.
+with `content/rules/...` keys and native profile source hashes. The same run
+generates `.claude` and `.grok` from that native tree, with a
+`generated from .revealui` marker on each projection. Native policy wins
+collisions. Do not hand-copy or edit installed policy. Edit its owning profile
+and use the maintained materializer.

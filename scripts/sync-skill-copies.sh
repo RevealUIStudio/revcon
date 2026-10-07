@@ -2,7 +2,7 @@
 # sync-skill-copies.sh — GAP-358
 #
 # Copies canonical profile skills into lockstep surfaces:
-#   profiles/revealui/claude/skills/<name>/SKILL.md  (source)
+#   profiles/revealui/revealui/skills/<name>/SKILL.md  (source)
 #     → profiles/revealui/agents/skills/<name>/SKILL.md
 #     → harnesses/generators/claude-code/.claude/skills/<name>/SKILL.md
 #
@@ -14,7 +14,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-CANON_ROOT="$REPO_ROOT/profiles/revealui/claude/skills"
+CANON_ROOT="$REPO_ROOT/profiles/revealui/revealui/skills"
 AGENTS_ROOT="$REPO_ROOT/profiles/revealui/agents/skills"
 GEN_ROOT="$REPO_ROOT/harnesses/generators/claude-code/.claude/skills"
 

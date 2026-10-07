@@ -4,7 +4,7 @@
 # Ensures accidental skill multi-copies stay byte-identical.
 #
 # Canonical source (edit here only):
-#   profiles/revealui/claude/skills/<name>/SKILL.md
+#   profiles/revealui/revealui/skills/<name>/SKILL.md
 #
 # Lockstep surfaces (must match canonical when present):
 #   profiles/revealui/agents/skills/<name>/SKILL.md
@@ -22,7 +22,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-CANON_ROOT="$REPO_ROOT/profiles/revealui/claude/skills"
+CANON_ROOT="$REPO_ROOT/profiles/revealui/revealui/skills"
 AGENTS_ROOT="$REPO_ROOT/profiles/revealui/agents/skills"
 GEN_ROOT="$REPO_ROOT/harnesses/generators/claude-code/.claude/skills"
 
@@ -71,7 +71,7 @@ while IFS= read -r -d '' skill_dir; do
 done < <(find "$CANON_ROOT" -mindepth 1 -maxdepth 1 -type d -print0 | sort -z)
 
 if (( fail != 0 )); then
-  echo "[skill-lockstep] FAIL — drifted copies (checked=$checked). Edit only profiles/revealui/claude/skills/, then run scripts/sync-skill-copies.sh." >&2
+  echo "[skill-lockstep] FAIL - drifted copies (checked=$checked). Edit only profiles/revealui/revealui/skills/, then run scripts/sync-skill-copies.sh." >&2
   exit 1
 fi
 

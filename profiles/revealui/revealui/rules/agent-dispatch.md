@@ -1,6 +1,6 @@
 # Agent Profile Dispatch
 
-Profiles live in `.claude/agents/`. Spawn them via the Agent tool when a task is
+Profiles live in `.revealui/content/agents/`. Spawn them via the Agent tool when a task is
 too large or specialized for the current session.
 
 ## Profiles
