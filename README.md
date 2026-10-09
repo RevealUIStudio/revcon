@@ -71,13 +71,13 @@ revcon/
 
 ## Skill multi-copy (GAP-358)
 
-Shared RevealUI skills ship on three surfaces that must stay **byte-identical**:
+Shared RevealUI skills ship on three surfaces that must stay **byte-identical**, including every file under the skill directory:
 
 | Role | Path |
 |------|------|
-| **Canonical (edit here)** | `profiles/revealui/revealui/skills/<name>/SKILL.md` |
-| Lockstep copy | `profiles/revealui/agents/skills/<name>/SKILL.md` |
-| Lockstep copy | `harnesses/generators/claude-code/.claude/skills/<name>/SKILL.md` |
+| **Canonical (edit here)** | `profiles/revealui/revealui/skills/<name>/` |
+| Lockstep copy | `profiles/revealui/agents/skills/<name>/` |
+| Lockstep copy | `harnesses/generators/claude-code/.claude/skills/<name>/` |
 
 ```bash
 # After editing a shared skill under profiles/revealui/revealui/skills/:

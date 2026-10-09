@@ -178,6 +178,51 @@ test_lockstep_failures() {
   fi
 }
 
+test_lockstep_generator_rules() {
+  local root="$TMP_ROOT/generator-rules" script="$REPO_ROOT/scripts/check-rules-lockstep.sh"
+  local out rc
+  rm -rf "$root"
+  mkdir -p "$root/profiles/sample/revealui/rules"
+  printf 'native\n' > "$root/profiles/sample/revealui/rules/policy.md"
+  rc=0
+  out="$(bash "$script" --root "$root" 2>&1)" || rc=$?
+  if [[ "$rc" -eq 0 && "$out" != *"generator rule directory missing"* ]]; then
+    pass "lockstep skips generator rules when both generator trees are absent"
+  else
+    fail "lockstep skips generator rules when both generator trees are absent (exit=$rc $out)"
+  fi
+
+  mkdir -p "$root/harnesses/generators/claude-code/.claude/rules"
+  rc=0
+  out="$(bash "$script" --root "$root" 2>&1)" || rc=$?
+  if [[ "$rc" -eq 1 && "$out" == *"generator rule directory missing"* ]]; then
+    pass "lockstep fails when only one generator rule tree is present"
+  else
+    fail "lockstep fails when only one generator rule tree is present (exit=$rc $out)"
+  fi
+
+  mkdir -p "$root/harnesses/generators/cursor/.cursor/rules" "$root/harnesses/rules/oss"
+  printf 'canonical\n' > "$root/harnesses/rules/oss/gate.md"
+  printf 'drifted\n' > "$root/harnesses/generators/claude-code/.claude/rules/gate.md"
+  printf '%s\n' '---' 'description: gate' '---' 'canonical' > "$root/harnesses/generators/cursor/.cursor/rules/gate.mdc"
+  rc=0
+  out="$(bash "$script" --root "$root" 2>&1)" || rc=$?
+  if [[ "$rc" -eq 1 && "$out" == *"DRIFT generator="*claude-code/.claude/rules/gate.md* ]]; then
+    pass "lockstep fails when a generator rule body drifts from harnesses/rules"
+  else
+    fail "lockstep fails when a generator rule body drifts from harnesses/rules (exit=$rc $out)"
+  fi
+
+  cp "$root/harnesses/rules/oss/gate.md" "$root/harnesses/generators/claude-code/.claude/rules/gate.md"
+  rc=0
+  out="$(bash "$script" --root "$root" 2>&1)" || rc=$?
+  if [[ "$rc" -eq 0 ]]; then
+    pass "lockstep accepts generator rule bodies that match harnesses/rules"
+  else
+    fail "lockstep accepts generator rule bodies that match harnesses/rules (exit=$rc $out)"
+  fi
+}
+
 test_lockstep_repo() {
   local out rc=0
   out="$(bash "$REPO_ROOT/scripts/check-rules-lockstep.sh" 2>&1)" || rc=$?
@@ -194,6 +239,7 @@ test_editor_claude_without_native_does_not_write_vendor
 test_editor_grok
 test_mode_copy
 test_lockstep_failures
+test_lockstep_generator_rules
 test_lockstep_repo
 
 echo "== native-first $PASS_COUNT passed, $FAIL_COUNT failed =="
