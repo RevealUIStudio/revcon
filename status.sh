@@ -293,7 +293,9 @@ process_target() {
              and all(.[0].profiles[]; type == "string")
              and (.[0].files | type == "object")
              and all(.[0].files[]; type == "object" and (.source | type == "string") and (.sha256 | type == "string"))
-             and all(.[0].files | keys[]; length > 0 and (test("[[:cntrl:]]") | not))
+             and all(.[0].files | keys[];
+               length > 0 and (test("[[:cntrl:]]") | not) and (startswith("/") | not) and
+               (split("/") | all(.[]; length > 0 and . != "." and . != "..")))
              and all(.[0].files[]; .source | test("[[:cntrl:]]") | not)
           then .[0].files | to_entries[] | @base64
           else error("invalid copy manifest") end
@@ -322,7 +324,11 @@ process_target() {
           ((m_total++)) || true
           local fpath="$target_dir/$rel"
           local state="ok"
-          if [[ -L "$fpath" ]]; then
+          local resolved
+          resolved="$(realpath -m -- "$fpath")"
+          if [[ "$resolved" != "$target_dir/"* ]]; then
+            state="escaped"
+          elif [[ -L "$fpath" ]]; then
             state="symlink"
           elif [[ ! -f "$fpath" ]]; then
             state="missing"

@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
-# unlink.sh — Remove symlinked editor configs from a target project.
+# unlink.sh — Remove managed editor configs from a target project.
 #
 # Usage:
 #   ./unlink.sh --target ~/revealfleet/revealui
 #   ./unlink.sh --target ~/revealfleet/revealui --editor zed
 #
-# Removes only symlinks that point back into this editor-configs repo.
-# Real files (local overrides, editor state) are left untouched.
-# Empty directories are cleaned up. Gitignore entries are NOT removed
-# (harmless to keep, avoids accidental commits if re-linking later).
+# Removes symlinks that point back into this editor-configs repo, and
+# copy-mode files whose hash still matches the manifest. Real files (local
+# overrides, editor state) are left untouched. A manifest path that escapes
+# the editor directory fails closed before any removal. Empty directories
+# are cleaned up. Gitignore entries are NOT removed (harmless to keep,
+# avoids accidental commits if re-linking later).
 
 set -euo pipefail
 
@@ -94,11 +96,18 @@ unlink_editor() {
     return
   fi
 
+  if [[ -L "$target_dir" ]]; then
+    echo "Error: unsafe editor directory; preserving files" >&2
+    exit 1
+  fi
+
+  # Admit every manifest path before deleting anything. A key such as
+  # "../../secret" or a symlink inside the editor directory must not make
+  # rm follow a path outside this dot-dir.
+  local manifest="$target_dir/.revcon-manifest.json"
   if [[ "$editor" == "revealui" ]]; then
-    [[ ! -L "$target_dir" ]] || { echo "Error: unsafe native policy root" >&2; exit 1; }
-    local native_manifest="$target_dir/.revcon-manifest.json"
-    if [[ -e "$native_manifest" ]]; then
-      if [[ -L "$native_manifest" ]] || ! command -v jq >/dev/null || ! jq -se '
+    if [[ -e "$manifest" ]]; then
+      if [[ -L "$manifest" ]] || ! command -v jq >/dev/null || ! jq -se '
         length == 1 and .[0].mode == "copy" and .[0].editor == "revealui" and
         (.[0].files | type == "object") and
         all(.[0].files | to_entries[];
@@ -107,15 +116,38 @@ unlink_editor() {
           (.key | split("/") | all(.[]; length > 0 and . != "." and . != "..")) and
           (.key | test("[[:cntrl:]]") | not) and
           (.value.sha256 | type == "string" and test("^[0-9a-f]{64}$")))
-      ' "$native_manifest" >/dev/null 2>&1; then
+      ' "$manifest" >/dev/null 2>&1; then
         echo "Error: invalid native policy manifest; preserving files" >&2; exit 1
       fi
       while IFS= read -r rel; do
         local native_dst="$target_dir/$rel" resolved
-        resolved="$(realpath -m -- "$(dirname "$native_dst")")/$(basename "$native_dst")"
+        resolved="$(realpath -m -- "$native_dst")"
         [[ "$resolved" == "$target_dir/"* ]] || { echo "Error: unsafe native policy path; preserving files" >&2; exit 1; }
-      done < <(jq -r '.files | keys[]' "$native_manifest")
+      done < <(jq -r '.files | keys[]' "$manifest")
     fi
+  elif [[ -L "$manifest" ]]; then
+    echo "Error: unsafe copy manifest; preserving files" >&2
+    exit 1
+  elif [[ -f "$manifest" ]] && command -v jq >/dev/null 2>&1; then
+    if ! jq -se '
+      length == 1 and (.[0] | type == "object") and .[0].mode == "copy" and
+      (.[0].files | type == "object") and
+      all(.[0].files | to_entries[];
+        (.key | type == "string") and
+        (.key | startswith("/") | not) and
+        (.key | test("[[:cntrl:]]") | not) and
+        (.key | split("/") | all(.[]; length > 0 and . != "." and . != "..")) and
+        (.value | type == "object") and
+        (.value.sha256 | type == "string" and test("^[0-9a-f]{64}$")))
+    ' "$manifest" >/dev/null 2>&1; then
+      echo "Error: invalid copy manifest; preserving files" >&2
+      exit 1
+    fi
+    while IFS= read -r rel; do
+      local vendor_dst="$target_dir/$rel" resolved
+      resolved="$(realpath -m -- "$vendor_dst")"
+      [[ "$resolved" == "$target_dir/"* ]] || { echo "Error: unsafe copy path; preserving files" >&2; exit 1; }
+    done < <(jq -r '.files | keys[]' "$manifest")
   fi
 
   echo "[$editor] scanning $target_dir"
@@ -137,7 +169,8 @@ unlink_editor() {
 
   # Copy-mode (materialized) dirs: remove manifest-listed copies whose hash
   # still matches the manifest; keep locally-modified files and warn.
-  local manifest="$target_dir/.revcon-manifest.json"
+  # Path admission above already rejected escapes; this loop only removes
+  # keys that stayed inside the editor directory.
   if [[ -f "$manifest" ]]; then
     if command -v jq >/dev/null 2>&1; then
       local kept=0
@@ -229,5 +262,5 @@ else
 fi
 
 echo ""
-echo "Done: $REMOVED symlinks removed"
+echo "Done: $REMOVED managed entries removed"
 echo "Note: .gitignore entries preserved (safe to keep)"

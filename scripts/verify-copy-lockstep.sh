@@ -107,6 +107,16 @@ hash_file() {
   sha256sum < "$1" | awk '{print $1}'
 }
 
+if ! jq -e '
+  all(.files | keys[];
+    (startswith("/") | not) and
+    (test("[[:cntrl:]]") | not) and
+    (split("/") | all(.[]; length > 0 and . != "." and . != "..")))
+' "$MANIFEST" >/dev/null 2>&1; then
+  echo "✗ manifest path escapes $DOT" >&2
+  exit 1
+fi
+
 problems=0
 count=0
 declare -A manifest_paths=()
@@ -117,6 +127,12 @@ while IFS=$'\t' read -r rel src want; do
   file_rel="$DOT/$rel"
   manifest_paths["$file_rel"]=1
   abs="$TARGET/$DOT/$rel"
+  resolved="$(realpath -m -- "$abs")"
+  if [[ "$resolved" != "$TARGET/$DOT/"* ]]; then
+    echo "  $file_rel — path escapes the editor directory" >&2
+    problems=$((problems + 1))
+    continue
+  fi
   if [[ ! -e "$abs" ]]; then
     echo "  $file_rel — missing on disk (manifest source: $src)" >&2
     problems=$((problems + 1))
@@ -169,7 +185,8 @@ if [[ "$DOT" == ".agents" && -f "$TARGET/.revealui/adapters/codex-files.json" ]]
     fi
     manifest_paths["$file_rel"]=1
     abs="$TARGET/$file_rel"
-    if [[ ! -f "$abs" || -L "$abs" || "$(realpath -m -- "$abs")" != "$abs" || "$(hash_file "$abs")" != "$want" ]]; then
+    resolved="$(realpath -m -- "$abs")"
+    if [[ "$resolved" != "$TARGET/"* || ! -f "$abs" || -L "$abs" || "$resolved" != "$abs" || "$(hash_file "$abs")" != "$want" ]]; then
       echo "Missing, linked, or modified native skill: $file_rel" >&2
       problems=$((problems + 1))
     fi
@@ -198,7 +215,7 @@ profiles="$(jq -r '.profiles | join(", ")' "$MANIFEST" 2>/dev/null || echo "?")"
 
 if (( problems > 0 )); then
   echo "✗ copy-lockstep: $problems violation(s) ($count manifest entr(y/ies), profiles: $profiles)" >&2
-  printf '  Re-apply: bash "$REVEALFLEET_ROOT/revcon/link.sh" --target %q --mode copy --profile revealfleet\n' "$TARGET" >&2 >&2
+  printf '  Re-apply: bash "$REVEALFLEET_ROOT/revcon/link.sh" --target %q --mode copy --profile revealfleet\n' "$TARGET" >&2
   exit 1
 fi
 

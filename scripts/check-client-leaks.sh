@@ -12,8 +12,9 @@
 #   bash scripts/check-client-leaks.sh <path> [<path>...]  # scan specific paths
 #   LEAK_JSON=1 bash scripts/check-client-leaks.sh         # machine-readable
 #
-# CI wiring: .github/workflows/check-client-leaks.yml
-# REQUIRED status check on `test` and `main` branch protection.
+# Local scanner, exercised by test/run-tests.sh. GitHub's required check is
+# the org composite action in .github/workflows/check-client-leaks.yml, not
+# this file. Keep the two pattern lists from drifting apart.
 #
 # Adding a new client / prospect / contact:
 #   Append one line to PATTERNS below (format: tag|literal-string|reason).
