@@ -255,8 +255,8 @@ source. Canonical export removes obsolete copies when a definition changes tier.
 
 | Tier | Contents | License |
 |------|----------|---------|
-| OSS (18) | biome, database, monorepo, tailwind, testing, safety, etc. | MIT |
-| Pro (11) | agent dispatch, debugging, TDD, code review, db-migrate, etc. | Commercial |
+| OSS (30) | 19 rules, 5 skills, 3 agents, 3 commands (biome, database, monorepo, tailwind, testing, safety, and the rest of `harnesses/manifest.json`) | MIT |
+| Pro (11) | 2 rules, 5 skills, 3 agents, 1 command (agent dispatch, debugging, TDD, code review, db-migrate, and the rest of the Pro tier) | Commercial |
 
 Pro definitions are visible in the repo but the CLI validates a license key before installing them.
 

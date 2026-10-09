@@ -47,6 +47,6 @@ profiles/revealui/revealui/skills/revealui-safety/SKILL.md                  lts-
 # Consumer-facing profiles under profiles/revealui/ use a placeholder instead.
 profiles/revealfleet/claude/rules/git.md   lit-username
 
-# Synthetic negative input proves the removed profile is rejected.
-# This fixture defines no supported alias or operating path.
-test/run-tests.sh                      banned-fleet-parent,private-jv-repo
+# Behavioral tests may mention private coordination paths as negative
+# fixtures. They do not cite a retired fleet parent spelling.
+test/run-tests.sh                      private-jv-repo

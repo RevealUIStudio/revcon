@@ -7,6 +7,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SCAN="$ROOT/scripts/check-no-private-leaks.sh"
 retired='rev''fleet'
+typo='rev''feet'
 
 tmpdir="$(mktemp -d)"
 cleanup() {
@@ -55,6 +56,22 @@ fi
 if ! grep -q '\[LEAK:banned-fleet-parent\]' "$tmpdir/home-bad.txt"; then
   cat "$tmpdir/home-bad.txt" >&2
   fail "README citing \$HOME/${retired} should emit banned-fleet-parent"
+fi
+
+typo_bad="$tmpdir/typo-bad"
+mkdir -p "$typo_bad"
+printf '%s\n' "./link.sh --target ~/${typo}/revealui --profile revealui" >"$typo_bad/README.md"
+set +e
+bash "$SCAN" "$typo_bad/README.md" >"$tmpdir/typo-bad.txt" 2>&1
+typo_code=$?
+set -e
+if [[ "$typo_code" -ne 1 ]]; then
+  cat "$tmpdir/typo-bad.txt" >&2
+  fail "README citing the retired typo parent should exit 1, got ${typo_code}"
+fi
+if ! grep -q '\[LEAK:banned-fleet-parent\]' "$tmpdir/typo-bad.txt"; then
+  cat "$tmpdir/typo-bad.txt" >&2
+  fail "README citing the retired typo parent should emit banned-fleet-parent"
 fi
 
 good="$tmpdir/good"

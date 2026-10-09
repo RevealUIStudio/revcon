@@ -62,6 +62,24 @@ setup_fixture_repo() {
   echo 'agents bar' > "$FIXTURE_REVCON/profiles/testprofile/agents/bar.md"
 }
 
+# Retired fleet spellings, built so this tracked file does not cite them.
+# Canonical identity remains revealfleet / RevealFleet / REVEALFLEET.
+retired_fleet_forms() {
+  local base='rev''fleet' feet='rev''feet' upper camel mixed i ch
+  upper="$(printf '%s' "$base" | tr '[:lower:]' '[:upper:]')"
+  camel="$(printf '%s' "${base:0:1}" | tr '[:lower:]' '[:upper:]')${base:1:2}$(printf '%s' "${base:3:1}" | tr '[:lower:]' '[:upper:]')${base:4}"
+  mixed=""
+  for ((i = 0; i < ${#base}; i++)); do
+    ch="${base:i:1}"
+    if (( i % 2 == 1 )); then
+      ch="$(printf '%s' "$ch" | tr '[:lower:]' '[:upper:]')"
+    fi
+    mixed+="$ch"
+  done
+  printf '%s\n' "$base" "$upper" "$camel" "$mixed" "./$camel" "$camel/" "nested/../$camel" \
+    "$feet" "$(printf '%s' "$feet" | tr '[:lower:]' '[:upper:]')"
+}
+
 # Run a fixture script (link.sh/unlink.sh/status.sh) with HOME pointed at the
 # fake home and any real-machine REVCON_* env overrides cleared, so a
 # developer's own shell exports (REVCON_SKIP_EDITORS, REVCON_PRIVATE_PROFILES_DIR)
@@ -426,7 +444,8 @@ test_removed_fleet_alias_rejected() {
   local target="$TMP_ROOT/t-removed-profile"
   mkdir -p "$target"
   # Synthetic negative input; never a supported profile or path.
-  local removed='revfleet' out
+  local removed out
+  removed="$(retired_fleet_forms | head -n 1)"
   if out="$(run_script link.sh --target "$target" --profile "$removed" --editor claude 2>&1)"; then
     fail "$name (unexpected acceptance)"
   elif [[ "$out" == *"shortened fleet identity"* && ! -e "$target/.claude" && ! -e "$target/.gitignore" ]]; then
@@ -438,7 +457,8 @@ test_removed_fleet_alias_rejected() {
 
 test_removed_fleet_names_never_resolve() {
   local removed mode source target out name rc index=0 private="$TMP_ROOT/private-profile-names"
-  for removed in revfleet REVFLEET RevFleet rEvFlEeT ./RevFleet RevFleet/ nested/../RevFleet; do
+  while IFS= read -r removed; do
+    [[ -n "$removed" ]] || continue
     for source in public private; do
       setup_fixture_repo
       mkdir -p "$private/$removed/revealui/rules" "$FIXTURE_REVCON/profiles/$removed/revealui/rules"
@@ -448,7 +468,7 @@ test_removed_fleet_names_never_resolve() {
         index=$((index + 1))
         target="$TMP_ROOT/rejected-profile-$index"
         mkdir -p "$target"
-        name="shortened $source profile $removed is denied before $mode output"
+        name="shortened $source profile form $index is denied before $mode output"
         rc=0
         if [[ "$source" == private ]]; then
           out="$(env -u REVCON_SKIP_EDITORS REVCON_PRIVATE_PROFILES_DIR="$private" \
@@ -463,7 +483,7 @@ test_removed_fleet_names_never_resolve() {
         fi
       done
     done
-  done
+  done < <(retired_fleet_forms)
 }
 
 test_profile_list_omits_removed_names() {
@@ -471,14 +491,16 @@ test_profile_list_omits_removed_names() {
   setup_fixture_repo
   local private="$TMP_ROOT/private-profile-list" removed listed ok=true
   mkdir -p "$FIXTURE_REVCON/profiles/revealfleet" "$private/revealfleet" "$private/other"
-  for removed in revfleet REVFLEET RevFleet rEvFlEeT; do
+  while IFS= read -r removed; do
+    [[ -n "$removed" && "$removed" != */* ]] || continue
     mkdir -p "$FIXTURE_REVCON/profiles/$removed" "$private/$removed"
-  done
+  done < <(retired_fleet_forms)
   listed="$(env -u REVCON_SKIP_EDITORS REVCON_PRIVATE_PROFILES_DIR="$private" bash "$FIXTURE_REVCON/link.sh" --list)" || ok=false
   [[ "$listed" == *"revealfleet"* && "$listed" == *"revealfleet (private)"* && "$listed" == *"other (private)"* ]] || ok=false
-  for removed in revfleet REVFLEET RevFleet rEvFlEeT; do
+  while IFS= read -r removed; do
+    [[ -n "$removed" && "$removed" != */* ]] || continue
     [[ "$listed" != *"$removed"* ]] || ok=false
-  done
+  done < <(retired_fleet_forms)
   if $ok; then pass "$name"; else fail "$name (output=$listed)"; fi
 }
 
@@ -574,7 +596,7 @@ test_private_scanner_covers_named_parents() {
   local name="private scanner blocks canonical, historical and renamed coordination paths"
   local target="$TMP_ROOT/private-path-fixture" out rc parent ok=true
   mkdir -p "$target"
-  for parent in revealfleet revfleet replacement-fleet; do
+  for parent in revealfleet replacement-fleet; do
     printf '%s/%s/.jv/workboard.md\n' '~' "$parent" > "$target/example.md"
     rc=0
     out="$(bash "$REPO_ROOT/scripts/check-no-private-leaks.sh" "$target" 2>&1)" || rc=$?
@@ -680,6 +702,127 @@ test_native_policy_real_profile() {
   run_script status.sh --target "$target" --editor revealui --verify >/dev/null 2>&1 || ok=false
   [[ -f "$target/.claude/.generated-from" && -f "$target/.grok/.generated-from" ]] || ok=false
   $ok && pass "$name" || fail "$name"
+}
+
+test_profile_name_rejects_path_escape() {
+  local sample target out rc name
+  for sample in '../base' 'revealfleet/../revealfleet' 'nested/name'; do
+    name="profile name $sample is rejected before mutation"
+    setup_fixture_repo
+    mkdir -p "$FIXTURE_REVCON/profiles/revealfleet/revealui/rules"
+    target="$TMP_ROOT/profile-segment-${sample//\//-}"
+    mkdir -p "$target"
+    rc=0
+    out="$(run_script link.sh --target "$target" --profile "$sample" --editor cursor --mode copy 2>&1)" || rc=$?
+    if [[ "$rc" -ne 0 && "$out" == *"single path segment"* && ! -e "$target/.cursor" && ! -e "$target/.revealui" ]]; then
+      pass "$name"
+    else
+      fail "$name (rc=$rc out=$out)"
+    fi
+  done
+}
+
+test_vendor_unlink_rejects_parent_escape() {
+  local editor dot target outside hash rc name
+  for editor in cursor zed vscode claude grok agents; do
+    name="unlink refuses parent-segment manifest escape for $editor"
+    dot=".$editor"
+    setup_fixture_repo
+    target="$TMP_ROOT/unlink-parent-$editor"
+    outside="$TMP_ROOT/keep-$editor.md"
+    mkdir -p "$target/$dot"
+    printf 'must remain %s\n' "$editor" > "$outside"
+    hash="$(sha256sum < "$outside" | awk '{print $1}')"
+    jq -n --arg hash "$hash" --arg editor "$editor" --arg rel "../../keep-$editor.md" \
+      '{mode:"copy",editor:$editor,profiles:["testprofile"],files:{($rel):{source:"base/zed/settings.json",sha256:$hash}}}' \
+      > "$target/$dot/.revcon-manifest.json"
+    rc=0
+    run_script unlink.sh --target "$target" --editor "$editor" >/dev/null 2>&1 || rc=$?
+    if [[ "$rc" -ne 0 && -f "$outside" && -f "$target/$dot/.revcon-manifest.json" ]]; then
+      pass "$name"
+    else
+      fail "$name (rc=$rc)"
+    fi
+  done
+}
+
+test_vendor_unlink_rejects_symlink_escape() {
+  local editor dot target outside_dir hash owned_hash rc name
+  for editor in cursor zed vscode claude grok agents; do
+    name="unlink refuses symlink manifest escape for $editor"
+    dot=".$editor"
+    setup_fixture_repo
+    target="$TMP_ROOT/unlink-symlink-$editor"
+    outside_dir="$TMP_ROOT/outside-$editor"
+    mkdir -p "$target/$dot" "$outside_dir"
+    printf 'keep %s\n' "$editor" > "$outside_dir/keep.md"
+    printf 'in tree %s\n' "$editor" > "$target/$dot/owned.md"
+    ln -s "$outside_dir" "$target/$dot/rules"
+    hash="$(sha256sum < "$outside_dir/keep.md" | awk '{print $1}')"
+    owned_hash="$(sha256sum < "$target/$dot/owned.md" | awk '{print $1}')"
+    jq -n --arg hash "$hash" --arg owned "$owned_hash" --arg editor "$editor" \
+      '{mode:"copy",editor:$editor,profiles:["testprofile"],files:{"rules/keep.md":{source:"base/zed/settings.json",sha256:$hash},"owned.md":{source:"base/zed/settings.json",sha256:$owned}}}' \
+      > "$target/$dot/.revcon-manifest.json"
+    rc=0
+    run_script unlink.sh --target "$target" --editor "$editor" >/dev/null 2>&1 || rc=$?
+    if [[ "$rc" -ne 0 && -f "$outside_dir/keep.md" && -f "$target/$dot/owned.md" && -f "$target/$dot/.revcon-manifest.json" ]]; then
+      pass "$name"
+    else
+      fail "$name (rc=$rc)"
+    fi
+  done
+}
+
+test_status_rejects_manifest_escape() {
+  local name="status --verify rejects a manifest path outside the editor directory"
+  setup_fixture_repo
+  local target="$TMP_ROOT/status-escape" outside="$TMP_ROOT/status-secret.md" out rc=0 hash
+  mkdir -p "$target/.claude"
+  cp "$FIXTURE_REVCON/base/zed/settings.json" "$outside"
+  hash="$(sha256sum < "$outside" | awk '{print $1}')"
+  jq -n --arg hash "$hash" --arg rel "../../status-secret.md" \
+    '{mode:"copy",profiles:["testprofile"],files:{($rel):{source:"base/zed/settings.json",sha256:$hash}}}' \
+    > "$target/.claude/.revcon-manifest.json"
+  out="$(run_script status.sh --target "$target" --editor claude --verify --json 2>&1)" || rc=$?
+  if [[ "$rc" -ne 0 && "$out" == *'"error":"invalid manifest"'* && -f "$outside" && "$out" != *'"state":"ok"'* ]]; then
+    pass "$name"
+  else
+    fail "$name (rc=$rc out=$out)"
+  fi
+}
+
+test_lockstep_rejects_manifest_escape() {
+  local name="copy lockstep rejects a manifest path outside the editor directory"
+  local target="$TMP_ROOT/lockstep-escape" outside="$TMP_ROOT/lockstep-secret.md" out rc=0 hash
+  mkdir -p "$target/.cursor"
+  printf 'secret\n' > "$outside"
+  hash="$(sha256sum < "$outside" | awk '{print $1}')"
+  jq -n --arg hash "$hash" --arg rel "../../lockstep-secret.md" \
+    '{mode:"copy",profiles:["testprofile"],files:{($rel):{source:"base/zed/settings.json",sha256:$hash}}}' \
+    > "$target/.cursor/.revcon-manifest.json"
+  out="$(bash "$REPO_ROOT/scripts/verify-copy-lockstep.sh" --target "$target" --dot .cursor 2>&1)" || rc=$?
+  if [[ "$rc" -ne 0 && "$out" == *"escapes"* && -f "$outside" ]]; then
+    pass "$name"
+  else
+    fail "$name (rc=$rc out=$out)"
+  fi
+
+  name="copy lockstep rejects a symlinked path outside the editor directory"
+  local linked="$TMP_ROOT/lockstep-symlink" outside_dir="$TMP_ROOT/lockstep-outside"
+  mkdir -p "$linked/.claude" "$outside_dir"
+  printf 'keep\n' > "$outside_dir/keep.md"
+  ln -s "$outside_dir" "$linked/.claude/rules"
+  hash="$(sha256sum < "$outside_dir/keep.md" | awk '{print $1}')"
+  jq -n --arg hash "$hash" \
+    '{mode:"copy",profiles:["testprofile"],files:{"rules/keep.md":{source:"base/zed/settings.json",sha256:$hash}}}' \
+    > "$linked/.claude/.revcon-manifest.json"
+  rc=0
+  out="$(bash "$REPO_ROOT/scripts/verify-copy-lockstep.sh" --target "$linked" --dot .claude 2>&1)" || rc=$?
+  if [[ "$rc" -ne 0 && "$out" == *"escapes"* && -f "$outside_dir/keep.md" ]]; then
+    pass "$name"
+  else
+    fail "$name (rc=$rc out=$out)"
+  fi
 }
 
 test_native_unlink_rejects_manifest_escape() {
@@ -811,6 +954,11 @@ test_native_policy_distribution
 test_native_policy_manifest_admission
 test_native_policy_real_profile
 test_native_unlink_rejects_manifest_escape
+test_vendor_unlink_rejects_parent_escape
+test_vendor_unlink_rejects_symlink_escape
+test_profile_name_rejects_path_escape
+test_status_rejects_manifest_escape
+test_lockstep_rejects_manifest_escape
 test_native_policy_claude_projection
 test_projection_preserves_handwritten_files
 test_native_policy_symlink_safety

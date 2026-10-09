@@ -40,8 +40,11 @@ PRIVATE_PROFILES_DIR="${REVCON_PRIVATE_PROFILES_DIR:-}"
 # Naming admission precedes both public and private profile resolution. A
 # directory with a retired identity must not restore an accepted alias.
 is_shortened_fleet_identity() {
+  # Reject retired spellings as a whole path segment. The canonical identity
+  # is longer (revealfleet / RevealFleet / REVEALFLEET) and does not match.
   case "/$1/" in
     *"/"[Rr][Ee][Vv][Ff][Ll][Ee][Ee][Tt]"/"*) return 0 ;;
+    *"/"[Rr][Ee][Vv][Ff][Ee][Ee][Tt]"/"*) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -114,6 +117,14 @@ while [[ $# -gt 0 ]]; do
         echo "Error: shortened fleet identity is not supported; use --profile revealfleet" >&2
         exit 1
       fi
+      # Names are one directory segment under profiles/ or the private root.
+      # A slash or parent segment would resolve outside that directory.
+      case "$2" in
+        ""|.*|*/*|*\\*)
+          echo "Error: profile name must be a single path segment: $2" >&2
+          exit 1
+          ;;
+      esac
       PROFILES+=("$2"); shift 2 ;;
     --editor)  EDITOR="$2";  shift 2 ;;
     --mode)    MODE="$2";    shift 2 ;;

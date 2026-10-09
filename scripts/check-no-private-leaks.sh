@@ -43,11 +43,9 @@ PATTERNS=(
   "abs-wsl-windows-user|/mnt/[a-z]/Users/[A-Za-z0-9_-]+|WSL mount of a Windows user path (/mnt/c/Users/<name>)"
   "private-jv-repo|[~/][A-Za-z][A-Za-z0-9._-]*/\\.jv|private coordination path under any named parent"
   # Literal path-token scan (inventory, not an AST check). Docs, README
-  # examples, and shell recipes must cite ~/revealfleet. The retired parent
-  # token must not reappear. revealfleet does not match this word. Detector
-  # files that have to name the token are allowlisted in .leakignore.
-  # This script is excluded from the scan, so the pattern line may spell it.
-  "banned-fleet-parent|\\brevfleet\\b|banned fleet parent; cite ~/revealfleet"
+  # examples, and shell recipes must cite ~/revealfleet. Retired parent
+  # spellings must not reappear. revealfleet does not match those words.
+  # The pattern is assembled below so this file does not cite them.
   "private-jv-name|revealui-jv|private repo name (revealui-jv)"
   "lts-drive|/mnt/e/|LTS drive mount path"
   "forge-drive|/mnt/forge/|Forge drive mount path"
@@ -60,6 +58,14 @@ PATTERNS=(
   "license-key|RVUI-[a-z]+-[a-f0-9]{16,}|RevealUI license key (looks like a real issued key)"
   "vercel-org-id|team_[A-Za-z0-9]{16,}|Vercel org/team identifier"
   "vercel-project-id|prj_[A-Za-z0-9]{16,}|Vercel project identifier"
+)
+
+# Retired parent spellings, quote-split so this tracked file does not cite them.
+retired_fleet_parent='rev''fleet'
+retired_fleet_typo='rev''feet'
+PATTERNS+=(
+  "banned-fleet-parent|\\b${retired_fleet_parent}\\b|banned fleet parent; cite ~/revealfleet"
+  "banned-fleet-parent|\\b${retired_fleet_typo}\\b|banned fleet parent typo; cite ~/revealfleet"
 )
 
 # Directories / file globs to exclude from the scan.
