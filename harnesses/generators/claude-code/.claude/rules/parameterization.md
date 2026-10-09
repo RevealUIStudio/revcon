@@ -35,7 +35,7 @@ export function configureModule(overrides: Partial<ModuleConfig>): void {
 
 - Tests need fast TTLs and small limits
 - Deployments may need different thresholds than development
-- `Math.random()` is not cryptographically secure — use `crypto.randomInt()` for security-sensitive values (OTPs, tokens, nonces)
+- `Math.random()` is not cryptographically secure  -  use `crypto.randomInt()` for security-sensitive values (OTPs, tokens, nonces)
 
 ## Applies To
 

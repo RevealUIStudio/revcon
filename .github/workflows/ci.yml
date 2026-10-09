@@ -146,7 +146,7 @@ jobs:
       - name: Prove banned fleet parent fails in docs
         run: bash scripts/check-banned-fleet-parent.test.sh
 
-  # GAP-358: accidental skill multi-copy lockstep (claude canonical → agents + generator)
+  # GAP-358: skill directory lockstep (profile canonical → agents + generator)
   skill-lockstep:
     name: Skill multi-copy lockstep
     runs-on: ubuntu-latest
@@ -155,7 +155,7 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
-      - name: Fail if agents/generator skill copies drift from claude
+      - name: Fail if skill directory copies drift from the profile canonical
         run: bash scripts/check-skill-lockstep.sh
 
   # GAP-419: rule file lockstep (profiles canonical → harnesses/rules copies)
@@ -167,7 +167,7 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
-      - name: Fail if harnesses/rules copies drift from profiles canonical
+      - name: Fail if rule copies or generator rule bodies drift
         run: bash scripts/check-rules-lockstep.sh
 
   validate-frontmatter:

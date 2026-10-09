@@ -25,11 +25,12 @@
 #   hub. Add a basename to EXEMPT below only with the same kind of rationale
 #   (a real per-target content difference), never to silence real drift.
 #
-# harnesses/generators/claude-code/.claude/rules/ and
-# harnesses/generators/cursor/.cursor/rules/ are a separate, already-drifted
-# materialization mechanism (create-revealui / harnesses.manifest.json).
-# Out of scope here; see GAP-421 (harnesses zero-consumer module audit) for
-# that mechanism's owning follow-up.
+# Generator rule bodies must match harnesses/rules/<tier>/<name>.md:
+#   harnesses/generators/claude-code/.claude/rules/<name>.md  (byte-identical)
+#   harnesses/generators/cursor/.cursor/rules/<name>.mdc      (body after frontmatter)
+# Cursor keeps its description frontmatter. The body is the harness rule.
+# A fixture with neither generator tree skips this check. A tree that has only
+# one of the two directories fails closed.
 #
 # Exit 0 when all present lockstep copies match. Exit 1 on any drift.
 #
@@ -219,8 +220,83 @@ check_manifests_and_projections() {
   done
 }
 
+canon_rule_for() {
+  local name="$1" tier candidate
+  for tier in oss pro; do
+    candidate="$REPO_ROOT/harnesses/rules/$tier/$name"
+    if [[ -f "$candidate" ]]; then
+      echo "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+mdc_body() {
+  local file="$1"
+  if [[ "$(head -n 1 "$file")" != "---" || "$(sed -n '3p' "$file")" != "---" ]]; then
+    echo "[rules-lockstep] DRIFT generator=$file frontmatter is not a 3-line description block" >&2
+    return 1
+  fi
+  if [[ "$(sed -n '2p' "$file")" != description:* ]]; then
+    echo "[rules-lockstep] DRIFT generator=$file frontmatter has no description" >&2
+    return 1
+  fi
+  tail -n +4 "$file"
+}
+
+check_generator_rule_bodies() {
+  local claude_root="$REPO_ROOT/harnesses/generators/claude-code/.claude/rules"
+  local cursor_root="$REPO_ROOT/harnesses/generators/cursor/.cursor/rules"
+  local claude cursor name canon body_tmp
+  if [[ ! -d "$claude_root" && ! -d "$cursor_root" ]]; then
+    return
+  fi
+  if [[ ! -d "$claude_root" || ! -d "$cursor_root" ]]; then
+    echo "[rules-lockstep] error: generator rule directory missing" >&2
+    fail=1
+    return
+  fi
+  while IFS= read -r -d '' claude; do
+    name="$(basename "$claude")"
+    checked=$((checked + 1))
+    if ! canon="$(canon_rule_for "$name")"; then
+      echo "[rules-lockstep] DRIFT generator rule=$name has no harnesses/rules canonical" >&2
+      fail=1
+      continue
+    fi
+    if ! cmp -s "$claude" "$canon"; then
+      echo "[rules-lockstep] DRIFT generator=$claude" >&2
+      echo "  canonical: $canon" >&2
+      fail=1
+    fi
+  done < <(find "$claude_root" -mindepth 1 -maxdepth 1 -name '*.md' -print0 | sort -z)
+  while IFS= read -r -d '' cursor; do
+    name="$(basename "$cursor" .mdc).md"
+    checked=$((checked + 1))
+    if ! canon="$(canon_rule_for "$name")"; then
+      echo "[rules-lockstep] DRIFT generator rule=$name has no harnesses/rules canonical" >&2
+      fail=1
+      continue
+    fi
+    body_tmp="$(mktemp)"
+    if ! mdc_body "$cursor" > "$body_tmp"; then
+      rm -f "$body_tmp"
+      fail=1
+      continue
+    fi
+    if ! cmp -s "$body_tmp" "$canon"; then
+      echo "[rules-lockstep] DRIFT generator=$cursor" >&2
+      echo "  canonical: $canon" >&2
+      fail=1
+    fi
+    rm -f "$body_tmp"
+  done < <(find "$cursor_root" -mindepth 1 -maxdepth 1 -name '*.mdc' -print0 | sort -z)
+}
+
 check_authoritative_lines
 check_manifests_and_projections
+check_generator_rule_bodies
 
 if (( fail != 0 )); then
   echo "[rules-lockstep] FAIL (checked=$checked, exempted=$exempted)." >&2
